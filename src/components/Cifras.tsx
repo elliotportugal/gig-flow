@@ -10,20 +10,21 @@ export default function Cifras() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // FUNÇÃO 1: Load CDN (DENTRO)
-  const loadCDN = useCallback(() => {
-    const scripts = [
-      'https://cdn.jsdelivr.net/npm/chordsheetjs@9.0.7/dist/chordsheetjs.umd.min.js',
-      'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'
-    ]
-    scripts.forEach(src => {
-      if (!document.querySelector(`script[src="${src}"]`)) {
-        const script = document.createElement('script')
-        script.src = src
-        script.async = true
-        document.head.appendChild(script)
-      }
-    })
-  }, [])
+const loadCDN = useCallback(() => {
+  const scripts = [
+    // CDN 1 fallback
+    'https://unpkg.com/chordsheetjs@9.0.7/dist/chordsheetjs.umd.min.js',
+    'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'
+  ]
+  scripts.forEach(src => {
+    if (!document.querySelector(`script[src="${src}"]`)) {
+      const script = document.createElement('script')
+      script.src = src
+      script.onerror = () => console.log('CDN fallback')
+      document.head.appendChild(script)
+    }
+  })
+}, [])
 
   // FUNÇÃO 2: Preview (DENTRO)
  const generatePreview = useCallback(async () => {
@@ -43,7 +44,16 @@ export default function Cifras() {
     setLoading(false)
     return
   }
-
+   
+if (!window.chordsheetjs) {
+  const lines = (textareaRef.current?.value || '').split('\n')
+  const htmlPreview = lines.map(line => 
+    `<div style="line-height: 1.6; font-family: monospace;">${line.replace(/([A-G][#b]?\d*)/g, '<span style="color: #3b82f6; font-weight: bold;">$1</span>')}</div>`
+  ).join('')
+  setPreview(htmlPreview)
+  setLoading(false)
+  return
+}
   try {
     const parser = new window.chordsheetjs.ChordsOverWordsParser()
     const song = parser.parse(textareaRef.current?.value || '')
