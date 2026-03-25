@@ -7,6 +7,7 @@ import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import SetlistEditor from "./pages/SetlistEditor";
 import NotFound from "./pages/NotFound";
+import Cifras from "./components/Cifras";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/editor" element={<SetlistEditor />} />
+          <Route path="/cifras" element={<Cifras />} /> 
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
