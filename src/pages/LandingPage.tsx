@@ -63,8 +63,8 @@ function HeroSection() {
         >
           <div className="flex items-center gap-2 mb-4">
             <div className="w-3 h-3 rounded-full bg-destructive/80" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-            <div className="w-3 h-3 rounded-full bg-green-500/80" />
+            <div className="w-3 h-3 rounded-full bg-neon-cyan/60" />
+            <div className="w-3 h-3 rounded-full bg-primary/60" />
             <span className="ml-2 text-xs text-muted-foreground">garota_de_ipanema.chord</span>
           </div>
           <pre className="chord-text text-sm leading-relaxed">
