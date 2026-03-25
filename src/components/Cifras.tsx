@@ -26,29 +26,35 @@ export default function Cifras() {
   }, [])
 
   // FUNÇÃO 2: Preview (DENTRO)
-  const generatePreview = useCallback(async () => {
-    setLoading(true)
-    setPreview('<p className="text-blue-400 p-4">🔄 Carregando biblioteca...</p>')
-    
-    // Wait 1.5s CDN
-    await new Promise(r => setTimeout(r, 1500))
-    
-    if (!window.chordsheetjs) {
-      setPreview('<p className="text-orange-400 p-6 text-center">⏳ CDN lento - tente novamente em 2s</p>')
-      setLoading(false)
-      return
+ const generatePreview = useCallback(async () => {
+  setLoading(true)
+  setPreview('<p class="text-blue-400 p-6 text-center animate-pulse">🔄 Carregando ChordSheetJS (3s)...</p>')
+  
+  // Wait 3s + poll
+  for (let i = 0; i < 15; i++) {
+    await new Promise(r => setTimeout(r, 200))
+    if (window.chordsheetjs && typeof window.chordsheetjs.ChordsOverWordsParser === 'function') {
+      break
     }
-
-    try {
-      const parser = new window.chordsheetjs.ChordsOverWordsParser()
-      const song = parser.parse(textareaRef.current?.value || '')
-      const formatter = new window.chordsheetjs.HtmlDivFormatter()
-      setPreview(formatter.format(song))
-    } catch(e) {
-      setPreview(`<p class="text-red-500 p-6 rounded-lg bg-red-900/20 border border-red-500/50">Erro parsing: ${e.message}<br/><small>Formato: G C ou :Intro | [Refrão]</small></p>`)
-    }
+  }
+  
+  if (!window.chordsheetjs) {
+    setPreview('<p class="text-orange-400 p-8 text-center bg-orange-900/20 rounded-xl">⚠️ CDN lento hoje<br/>Tente Preview novamente ou em 10s</p>')
     setLoading(false)
-  }, [])
+    return
+  }
+
+  try {
+    const parser = new window.chordsheetjs.ChordsOverWordsParser()
+    const song = parser.parse(textareaRef.current?.value || '')
+    const formatter = new window.chordsheetjs.HtmlDivFormatter()
+    setPreview(formatter.format(song))
+  } catch(e) {
+    console.error(e)
+    setPreview(`<p class="text-red-500 p-6 rounded-xl bg-red-900/20 border-2 border-red-500/50 text-center">Erro: ${e.message}<br/><small>Exemplo: <code>: Intro<br/>G C D</code></small></p>`)
+  }
+  setLoading(false)
+}, [])
 
   // FUNÇÃO 3: PDF (DENTRO)
   const downloadPDF = useCallback(() => {
