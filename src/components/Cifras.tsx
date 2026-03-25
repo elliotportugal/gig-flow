@@ -63,51 +63,70 @@ export default function Cifras() {
     }
   }
 
+  
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl">Gerador Cifras Real Book</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Textarea 
-          ref={textareaRef}
-          placeholder={`: Intro
-G   C   D   C
-G   Em  C   D
+  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 py-12 px-4">
+    <div className="max-w-4xl mx-auto space-y-8">
+      {/* Hero */}
+      <div className="text-center mb-12">
+        <h1 className="text-4xl md:text-6xl font-black bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 bg-clip-text text-transparent drop-shadow-2xl">
+          🎸 Gig Flow Cifras
+        </h1>
+        <p className="text-xl md:text-2xl text-slate-300 mt-4 max-w-2xl mx-auto leading-relaxed">
+          Crie e exporte cifras estilo Real Book para seus shows em segundos
+        </p>
+      </div>
 
-[Refrão]
-(A D E D A F#m D E)x2`}
-          className="h-40 font-mono text-sm resize-none"
-          defaultValue={`
-:title Gig Flow Demo
+      {/* Editor + Preview */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        {/* Input */}
+        <Card className="shadow-2xl ring-2 ring-purple-500/50 backdrop-blur-sm bg-white/5 border-white/20">
+          <CardContent className="p-8 pt-6">
+            <Textarea 
+              ref={textareaRef}
+              placeholder="Cole sua cifra aqui...
 : Intro
 | G | C | D | C |
 | G | Em | C | D |
 
-[Verso]
-C           G
-Esta é uma cifra demo
-Am          F
-Do seu app SetlistPro
-`}
-        />
-        <div className="flex gap-3">
-          <Button onClick={generatePreview} disabled={loading} className="flex-1">
-            {loading ? 'Gerando...' : 'Preview HTML'}
-          </Button>
-          <Button onClick={downloadPDF} variant="outline" className="px-6">
-            💾 PDF Pro
-          </Button>
-        </div>
+[Refrão]
+(A D E D)x2"
+              className="h-80 font-mono text-sm bg-slate-900/50 border-white/20 resize-none shadow-inner focus-visible:ring-purple-500"
+            />
+            <div className="flex gap-4 mt-6">
+              <Button 
+                onClick={generatePreview} 
+                disabled={loading}
+                className="flex-1 shadow-xl hover:shadow-purple-500/50 bg-gradient-to-r from-purple-600 to-pink-600"
+              >
+                {loading ? '✨ Gerando...' : '✨ Preview HTML'}
+              </Button>
+              <Button 
+                onClick={downloadPDF} 
+                variant="outline" 
+                className="px-8 shadow-xl border-white/30 hover:bg-white/10"
+              >
+                💾 PDF Pro R$9
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Preview */}
         {preview && (
-          <div className="p-6 border rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 font-mono text-sm leading-relaxed max-h-96 overflow-auto">
-            <div dangerouslySetInnerHTML={{ __html: preview }} />
-          </div>
+          <Card className="shadow-2xl ring-2 ring-emerald-500/50 backdrop-blur-sm bg-white/5 border-white/20 max-h-[500px] overflow-hidden">
+            <div className="p-8 max-h-[500px] overflow-auto font-mono text-sm leading-6 bg-gradient-to-b from-emerald-900/20 to-slate-900/50">
+              <div dangerouslySetInnerHTML={{ __html: preview }} />
+            </div>
+          </Card>
         )}
-        <p className="text-xs text-slate-500 text-center">
-          Formato: :Intro | G | C | ou [Refrão] (acordes sobre letras)
-        </p>
-      </CardContent>
-    </Card>
-  )
+      </div>
+
+      <div className="text-center text-sm text-slate-500 max-w-2xl mx-auto">
+        Formato suportado: :Intro | G | C | [Refrão] (acordes sobre letras) | (x2)
+      </div>
+    </div>
+  </div>
+)
+
 }
