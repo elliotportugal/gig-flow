@@ -1,3 +1,13 @@
-# Welcome to your Lovable project
+# Gig Flow - Repertório Guia para Shows
 
-TODO: Document your project here
+SaaS para bandas: Monte setlists com cifras Real Book, transpose, export PDF. MVP em dev.
+
+## Demo
+[Link Vercel aqui]
+
+## Tech
+- Next.js / Tailwind
+- Supabase (DB real-time)
+- ChordSheetJS (cifras)
+
+⭐ Star se curtiu!
