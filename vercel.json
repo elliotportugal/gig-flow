@@ -1,0 +1,8 @@
+{
+  "installCommand": "npm ci --legacy-peer-deps --no-audit --no-fund",
+  "buildCommand": "npm run build",
+  "framework": "nextjs",
+  "npm": {
+    "version": "10"
+  }
+}
