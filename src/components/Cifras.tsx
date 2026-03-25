@@ -9,59 +9,47 @@ export default function Cifras() {
   const [loading, setLoading] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  useEffect(() => {
-    // CDN ChordSheetJS + jsPDF
-    const loadScripts = () => {
-      const scripts = [
-        'https://cdn.jsdelivr.net/npm/chordsheetjs@9.0.7/dist/chordsheetjs.umd.min.js',
-        'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'
-      ]
-      scripts.forEach(src => {
-        if (!document.querySelector(`script[src="${src}"]`)) {
-          const script = document.createElement('script')
-          script.src = src
-          script.async = true
-          document.head.appendChild(script)
-        }
-      })
-    }
-    loadScripts()
-  }, [])
-
-  const generatePreview = () => {
-    setLoading(true)
-    setTimeout(() => {
-      try {
-        if (window.chordsheetjs) {
-          const parser = new window.chordsheetjs.ChordsOverWordsParser()
-          const song = parser.parse(textareaRef.current?.value || '')
-          const formatter = new window.chordsheetjs.HtmlDivFormatter()
-          setPreview(formatter.format(song))
-        } else {
-          setPreview('<p>Carregando biblioteca... tente novamente</p>')
-        }
-      } catch(e) {
-        setPreview('<p class="text-red-500">Formato inválido. Use: G C ou :Intro</p>')
+useEffect(() => {
+  const loadScripts = () => {
+    const scripts = [
+      { src: 'https://cdn.jsdelivr.net/npm/chordsheetjs@9.0.7/dist/chordsheetjs.umd.min.js', global: 'chordsheetjs' },
+      { src: 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js', global: 'jspdf' }
+    ]
+    scripts.forEach(({ src, global }) => {
+      if (!window[global] && !document.querySelector(`script[src="${src}"]`)) {
+        const script = document.createElement('script')
+        script.src = src
+        script.onload = () => console.log(`${global} loaded`)
+        document.head.appendChild(script)
       }
-      setLoading(false)
-    }, 800)
+    })
   }
+  loadScripts()
+}, [])
 
-  const downloadPDF = () => {
-    if (!window.jspdf || !textareaRef.current?.value) return
-    
-    const { jsPDF } = window.jspdf
-    const doc = new jsPDF()
-    try {
-      const parser = new window.chordsheetjs.ChordsOverWordsParser()
-      const song = parser.parse(textareaRef.current.value)
-      const formatter = new window.chordsheetjs.TextFormatter()
-      doc.text(formatter.format(song), 10, 10)
-      doc.save('cifra-realbook.pdf')
-    } catch(e) {
-      alert('Erro PDF - verifique formato da cifra')
+ const generatePreview = async () => {
+  setLoading(true)
+  setPreview('<p>🔄 Carregando biblioteca musical...</p>')
+  
+  // Wait CDN
+  await new Promise(resolve => {
+    const checkLibs = () => {
+      if (window.chordsheetjs && window.jspdf) resolve(true)
+      else setTimeout(checkLibs, 200)
     }
+    checkLibs()
+  })
+  
+  try {
+    const parser = new window.chordsheetjs.ChordsOverWordsParser()
+    const song = parser.parse(textareaRef.current?.value || '')
+    const formatter = new window.chordsheetjs.HtmlDivFormatter()
+    setPreview(formatter.format(song))
+  } catch(e) {
+    setPreview('<p class="text-red-500 p-4 rounded bg-red-900/30">Erro: ' + e.message + '<br/>Formato: G C ou :Intro</p>')
   }
+  setLoading(false)
+}
 
   
   return (
