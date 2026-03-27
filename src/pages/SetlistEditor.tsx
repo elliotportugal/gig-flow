@@ -5,7 +5,7 @@ import { Music, Plus, ChevronLeft, Trash2, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
-import CifrasEditor from "@/components/CifrasEditor";
+import CifrasEditor from "@/components/CifrasEditor.tsx";
 
 // ───────────────────────────────────────
 // TIPOS
@@ -336,7 +336,7 @@ export default function SetlistEditor() {
                             artist={musica.artista}
                             tom={musica.tom}
                             cifra={musica.cifra}
-                            mapa={musica.mapa}
+                            mapa={typeof musica.mapa === 'string' ? musica.mapa : JSON.stringify(musica.mapa)}
                             transpose={musica.transpose}
                             onTitleChange={(v) => updateMusica(musica.id, { titulo: v })}
                             onArtistChange={(v) => updateMusica(musica.id, { artista: v })}
