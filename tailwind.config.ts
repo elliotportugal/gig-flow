@@ -16,6 +16,7 @@ export default {
       fontFamily: {
         sans: ['"Instrument Sans"', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
+        patrick: ["'Patrick Hand'", "cursive"],
       },
       colors: {
         border: "hsl(var(--border))",

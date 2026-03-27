@@ -1,6 +1,9 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 
+// ───────────────────────────────────────
 // 1. PARSER REAL BOOK / AUTO CLEAN
+// ───────────────────────────────────────
+
 const autoClean = (raw: string): string => {
   return raw
     .replace(/\r\n/g, "\n")
@@ -35,7 +38,10 @@ const parseCS = (cleaned: string): { row: string; hasChords: boolean }[] => {
   return result;
 };
 
-// 2. TRANSPOSE 1 TOM
+// ───────────────────────────────────────
+// 2. TRANSPOSE
+// ───────────────────────────────────────
+
 const allKeys = [
   "C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B",
 ];
@@ -81,7 +87,10 @@ const transposeLine = (line: string, delta: number): string => {
     .join(" ");
 };
 
+// ───────────────────────────────────────
 // 3. RENDER ROW
+// ───────────────────────────────────────
+
 type Row = { row: string; hasChords: boolean };
 
 const renderRow = (row: Row, id: number, transpose: number) => {
@@ -110,14 +119,17 @@ const renderRow = (row: Row, id: number, transpose: number) => {
   );
 };
 
-// 4. COMPONENTE PRINCIPAL
+// ───────────────────────────────────────
+// 4. COMPONENTE PRINCIPAL (LAYOUT MUITO SIMPLES)
+// ───────────────────────────────────────
+
 const Cifras = () => {
-  const [tom, setTom] = useState("C");
-  const [title, setTitle] = useState("Nova Música");
+  const [title, setTitle] = useState("Nova música");
   const [artist, setArtist] = useState("Anônimo");
+  const [tom, setTom] = useState("C");
   const [rawLyrics, setRawLyrics] = useState("");
-  const [transpose, setTranspose] = useState(0);
   const [isClean, setIsClean] = useState(true);
+  const [transpose, setTranspose] = useState(0);
 
   const handleChangeRaw = (ev: React.ChangeEvent<HTMLTextAreaElement>) => {
     setRawLyrics(ev.target.value);
@@ -127,62 +139,49 @@ const Cifras = () => {
     setTranspose((prev) => prev + delta);
   };
 
-  const cleaned = isClean ? autoClean(rawLyrics) : rawLyrics;
-  const parsedRows = parseCS(cleaned);
-
   const handleDownloadPDF = () => {
     const el = document.getElementById("realbook-pdf-target");
     if (!el) return;
-    alert("PDF: exporte esse div com html2pdf (Stripe paywall here)");
+    alert("PDF: exporte esse div com html2pdf (Stripe)");
   };
 
+  const cleaned = isClean ? autoClean(rawLyrics) : rawLyrics;
+  const parsedRows = parseCS(cleaned);
+
+  const currentTom =
+    allKeys[(allKeys.indexOf(tom) + transpose + allKeys.length) % allKeys.length];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-amber-100 font-patrick">
-      <header className="sticky top-0 z-10 bg-gray-900 border-b border-gray-700 px-4 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex-1 flex flex-wrap gap-2">
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Título"
-              className="bg-gray-800 border border-gray-600 rounded px-3 py-1 text-sm text-amber-50 focus:outline-none focus:ring focus:ring-amber-500"
-            />
-            <input
-              type="text"
-              value={artist}
-              onChange={(e) => setArtist(e.target.value)}
-              placeholder="Artista"
-              className="bg-gray-800 border border-gray-600 rounded px-3 py-1 text-sm text-amber-50 focus:outline-none focus:ring focus:ring-amber-500"
-            />
-            <select
-              value={tom}
-              onChange={(e) => setTom(e.target.value)}
-              className="bg-gray-800 border border-gray-600 rounded px-3 py-1 text-sm text-amber-50"
-            >
-              {allKeys.map((k) => (
-                <option key={k} value={k}>
-                  {k}
-                </option>
-              ))}
-            </select>
+    <div className="min-h-screen bg-gray-900 text-gray-100">
+      {/* ───────────── HEADER: TÍTULO E TOM + AÇÕES ───────────── */}
+      <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 max-w-4xl mx-auto">
+          <div>
+            <h1 className="text-2xl font-bold text-amber-300">{title}</h1>
+            <p className="text-sm text-gray-300">
+              {artist} • <span className="text-amber-400">Tom:</span> {currentTom}
+            </p>
           </div>
-          <div className="flex gap-2">
+
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-400 hidden sm:block">
+              <span className="text-amber-400">Base:</span> {tom}
+            </span>
             <button
               onClick={() => changeTranspose(-1)}
-              className="bg-amber-700 text-gray-900 px-2 py-1 rounded text-sm font-medium hover:bg-amber-600 transition"
+              className="bg-amber-700 text-gray-900 px-3 py-1 rounded text-sm font-medium hover:bg-amber-600 transition"
             >
               −1
             </button>
             <button
               onClick={() => changeTranspose(1)}
-              className="bg-amber-700 text-gray-900 px-2 py-1 rounded text-sm font-medium hover:bg-amber-600 transition"
+              className="bg-amber-700 text-gray-900 px-3 py-1 rounded text-sm font-medium hover:bg-amber-600 transition"
             >
               +1
             </button>
             <button
               onClick={handleDownloadPDF}
-              className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-blue-500 transition"
+              className="bg-blue-600 text-white px-4 py-1 rounded text-sm font-medium hover:bg-blue-500 transition"
             >
               PDF
             </button>
@@ -190,63 +189,43 @@ const Cifras = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr_4fr] gap-4 p-4">
-        {/* SIDEBAR REPETÓRIO */}
-        <aside className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <h4 className="text-amber-400 text-sm font-semibold mb-2">Repertório</h4>
-          <ul className="text-sm text-amber-100 space-y-1">
-            <li className="cursor-pointer opacity-90 hover:opacity-100 text-amber-200">Yesterday – The Beatles</li>
-            <li className="cursor-pointer opacity-90 hover:opacity-100 text-amber-200">Corcovado – Tom Jobim</li>
-            <li className="cursor-pointer opacity-90 hover:opacity-100 text-amber-200">Moondance – Van Morrison</li>
-          </ul>
-        </aside>
-
-        {/* MAPA */}
-        <section className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <h4 className="text-cyan-300 text-sm font-semibold mb-2">Mapa</h4>
-          <ul className="text-sm text-amber-100 space-y-1">
-            <li>Intro</li>
-            <li>Primeira parte</li>
-            <li>Refrão</li>
-            <li>Bridge</li>
-            <li>Final</li>
-          </ul>
-        </section>
-
-        {/* GRID REAL BOOK */}
-        <section className="bg-gray-900 border border-gray-700 rounded-lg p-4 shadow-lg">
-          <div className="mb-3">
-            <h2 className="text-amber-300 text-xl font-bold">{title}</h2>
-            <p className="text-amber-200 text-sm">
-              {artist} • Tom:{" "}
-              {allKeys[(allKeys.indexOf(tom) + transpose + allKeys.length) % allKeys.length]}
-            </p>
-          </div>
-
-          <div className="mb-3">
-            <label className="text-sm opacity-90 flex items-center gap-2">
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* ───────────── EDITOR DE CIFRA BRUTA ───────────── */}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm text-gray-300 font-medium">
+              ✍️ Escreva ou cole a cifra
+            </h2>
+            <label className="inline-flex items-center text-xs text-gray-400">
               <input
                 type="checkbox"
                 checked={isClean}
                 onChange={(e) => setIsClean(e.target.checked)}
                 className="rounded text-amber-500"
               />
-              Cifra Bruta
+              <span className="ml-1">Auto clean</span>
             </label>
           </div>
+          <textarea
+            value={rawLyrics}
+            onChange={handleChangeRaw}
+            placeholder="Cole aqui a cifra (acordes acima, letra abaixo)..."
+            className="w-full bg-gray-900 border border-gray-600 rounded p-4 text-sm text-amber-50 font-mono resize-y focus:outline-none focus:ring focus:ring-amber-500 focus:ring-opacity-30"
+          />
+        </div>
 
-          <div id="realbook-pdf-target" className="space-y-4">
-            <textarea
-              value={rawLyrics}
-              onChange={handleChangeRaw}
-              placeholder="Cole a cifra aqui..."
-              className="w-full bg-gray-800 border border-gray-600 rounded p-3 text-sm text-amber-50 font-mono resize-y"
-            />
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-              {parsedRows.map((row, i) => renderRow(row, i, transpose))}
-            </div>
+        {/* ───────────── REAL BOOK GRID ───────────── */}
+        <div
+          id="realbook-pdf-target"
+          className="bg-gray-900 border border-gray-700 rounded-lg p-4 space-y-4"
+        >
+          <h3 className="text-sm text-gray-400 font-medium">
+            🎼 Real Book (leia abaixo)
+          </h3>
+          <div className="grid grid-cols-1 gap-2 text-sm leading-6 text-amber-100 font-patrick">
+            {parsedRows.map((row, i) => renderRow(row, i, transpose))}
           </div>
-        </section>
+        </div>
       </div>
     </div>
   );
