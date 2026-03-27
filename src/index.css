@@ -2,6 +2,13 @@
 @import '@fontsource/jetbrains-mono/400.css';
 @import '@fontsource/jetbrains-mono/700.css';
 
+@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;700&family=Lato:wght@400;700;900&display=swap');
+
+.font-patrick { font-family: 'Patrick Hand', cursive; }
+.font-lato { font-family: 'Lato', sans-serif; }
+.font-mono { font-family: 'IBM Plex Mono', monospace; }
+
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
