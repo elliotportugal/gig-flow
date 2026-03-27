@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import GigLayout from '../components/GigLayout';
+import GigLayout from './GigLayout';
 
 const Cifras: React.FC = () => {
   const [songs, setSongs] = useState<any[]>([]);
