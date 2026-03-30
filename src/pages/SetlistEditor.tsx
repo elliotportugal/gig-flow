@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import { parseTextoParaGridData } from "@/lib/music-utils";
 
 // --- MOCK DATA INICIAL (Caso o LocalStorage esteja vazio) ---
 const initialMusicas = [
@@ -128,24 +129,7 @@ export default function SetlistEditor() {
     setMusicas(novaLista);
   };
 
-  // --- PARSER DE CIFRAS ---
-  const parseTextoParaGridData = (texto: string = "") => {
-    const linhas = texto.split('\n').map(l => l.trim()).filter(l => l !== "");
-    const gridData: { name: string, rows: string[][] }[] = [];
-    let secaoAtual: { name: string, rows: string[][] } | null = null;
-
-    linhas.forEach(linha => {
-      if (linha.startsWith(':')) {
-        secaoAtual = { name: linha.replace(':', '').trim(), rows: [] };
-        gridData.push(secaoAtual);
-      } else if (secaoAtual) {
-        const acordes = linha.split(/[\s|]+/).filter(a => a.trim() !== "").map(a => a.replace(/_/g, ' '));
-        if (acordes.length > 0) secaoAtual.rows.push(acordes);
-      }
-    });
-    return gridData.length > 0 ? gridData : [{ name: 'MAPA', rows: [] }];
-  };
-
+  
   return (
     <div className="min-h-screen bg-background text-foreground font-sans overflow-x-hidden">
       
