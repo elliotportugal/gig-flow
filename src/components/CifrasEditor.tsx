@@ -1,5 +1,5 @@
 "use client"
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
@@ -20,94 +20,124 @@ interface CifrasEditorProps {
   onGeneratePdf: () => void
 }
 
-export default function CifrasEditor({
+export default function CifrasEditor({ 
   title, artist, tom, cifra, mapa, transpose,
-  onTitleChange, onArtistChange, onTomChange, onCifraChange, onMapaChange, onTranspose, onGeneratePdf
+  onTitleChange, onArtistChange, onTomChange, onCifraChange, onMapaChange, onTranspose, onGeneratePdf 
 }: CifrasEditorProps) {
-  const [raw, setRaw] = useState(cifra)
+  const [raw, setRaw] = useState(cifra || '')
+  const [activeTab, setActiveTab] = useState<'raw' | 'clean' | 'grid'>('raw')
+
+  // SYNC CIFRA ↔ MAPA
+  useEffect(() => {
+    if (cifra !== raw) setRaw(cifra || '')
+  }, [cifra])
+
+  useEffect(() => {
+    if (mapa && mapa !== raw) {
+      setRaw(mapa)
+      setActiveTab('clean')
+    }
+  }, [mapa])
 
   const autoClean = useCallback(() => {
-    const lines = raw.split('\n')
-    const cleaned = lines
+    const cleaned = raw.split('\n')
       .map(line => line.replace(/\[([^\]]+)\]/g, ': $1'))
       .filter(Boolean)
       .join('\n')
     
+    setRaw(cleaned)
     onCifraChange(cleaned)
     onMapaChange(cleaned)
+    setActiveTab('grid')
   }, [raw, onCifraChange, onMapaChange])
 
+  // ... seu código atual até autoClean
+
   return (
-    <div className="space-y-4 p-6 bg-gradient-to-b from-slate-900/50 to-slate-800/50 rounded-2xl border border-slate-700/50 backdrop-blur-xl">
-      {/* Header Inputs */}
-      <div className="grid grid-cols-3 gap-4">
-        <Input 
-          value={title} 
-          onChange={e => onTitleChange(e.target.value)}
-          placeholder="Título"
-          className="font-bold text-lg bg-slate-800/70"
-        />
-        <Input 
-          value={artist} 
-          onChange={e => onArtistChange(e.target.value)}
-          placeholder="Artista"
-        />
-        <div className="flex gap-2">
-          <Input 
-            value={tom} 
-            onChange={e => onTomChange(e.target.value)}
-            placeholder="Tom"
-            className="flex-1"
+    <div className="flex h-full gap-6 p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Sidebar */}
+      <div className="w-64 bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700 p-4">
+        <h3 className="text-xs font-bold uppercase text-slate-400 mb-4">Repertório</h3>
+        <div className="text-sm p-3 bg-slate-700/50 rounded-xl cursor-pointer hover:bg-slate-600">
+          Come Together
+        </div>
+      </div>
+
+      <div className="flex-1 grid grid-cols-[1fr_1.3fr] gap-6">
+        {/* 1. Cifra Bruta */}
+        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700 flex flex-col">
+          <div className="p-4 bg-slate-900/50 border-b border-slate-700 text-xs font-bold uppercase text-amber-400">
+            CIFRA BRUTA
+          </div>
+          <div className="p-4 border-b border-slate-700 grid grid-cols-3 gap-3">
+            <Input value={title} onChange={e => onTitleChange(e.target.value)} />
+            <Input value={artist} onChange={e => onArtistChange(e.target.value)} />
+            <Input value={tom} onChange={e => onTomChange(e.target.value)} />
+          </div>
+          <Textarea 
+            value={raw} 
+            onChange={e => setRaw(e.target.value)}
+            className="flex-1 font-mono text-sm bg-slate-900/80 resize-none border-0"
           />
-          <Button onClick={() => onTranspose(-1)} size="sm" variant="outline" className="w-12 h-10">-</Button>
-          <Button onClick={() => onTranspose(1)} size="sm" variant="outline" className="w-12 h-10">+</Button>
+          <Button onClick={autoClean} className="m-4">Auto Clean</Button>
+        </div>
+
+        {/* 2+3. Mapa + Grid */}
+        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700 flex flex-col">
+          <div className="flex bg-slate-900/50 border-b border-slate-700">
+            <Button 
+              className={`flex-1 p-3 text-xs uppercase font-bold border-b-2 ${activeTab === 'clean' ? 'border-amber-400 text-amber-300 bg-slate-900/50' : 'text-slate-400'}`}
+              onClick={() => setActiveTab('clean')}
+            >
+              Mapa Texto
+            </Button>
+            <Button 
+              className={`flex-1 p-3 text-xs uppercase font-bold border-b-2 ${activeTab === 'grid' ? 'border-amber-400 text-amber-300 bg-slate-900/50' : 'text-slate-400'}`}
+              onClick={() => setActiveTab('grid')}
+            >
+              Real Book
+            </Button>
+          </div>
+
+          {activeTab === 'clean' && (
+            <div className="flex-1 p-6">
+              <Textarea 
+                value={mapa || raw} 
+                onChange={e => onMapaChange(e.target.value)}
+                className="w-full h-full font-mono text-sm bg-slate-900/80 resize-none border-0"
+              />
+            </div>
+          )}
+
+          {activeTab === 'grid' && (
+            <div className="flex-1 overflow-auto p-8 bg-slate-900/20">
+              <div className="max-w-2xl mx-auto">
+                <div className="p-12 bg-white rounded-2xl shadow-2xl text-black font-mono">
+                  <div className="mb-6">
+                    <div className="inline-block border border-slate-500 text-xs px-3 py-1 mb-2 rounded-xl font-bold text-slate-600 bg-slate-100">
+                      {title || 'INTRO'}
+                    </div>
+                    <div className="flex mb-1">
+                      <div className="flex-1 min-h-[70px] border-l-2 border-slate-400 flex items-center justify-center p-3 hover:bg-slate-50">
+                        <span className="font-bold text-lg text-slate-800">Bm</span>
+                      </div>
+                      <div className="flex-1 min-h-[70px] border-l-2 border-slate-400 flex items-center justify-center p-3 hover:bg-slate-50">
+                        <span className="font-bold text-lg text-slate-800">F#</span>
+                      </div>
+                      <div className="flex-1 min-h-[70px] border-l-2 border-slate-400 flex items-center justify-center p-3 hover:bg-slate-50">
+                        <span className="font-bold text-lg text-slate-800">A</span>
+                      </div>
+                      <div className="flex-1 min-h-[70px] border-r-2 border-l-2 border-slate-400 flex items-center justify-center p-3 hover:bg-slate-50">
+                        <span className="font-bold text-lg text-slate-800">E</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Cifra Editor */}
-      <div>
-        <label className="text-sm font-bold text-amber-400 mb-2 block">Cifra Bruta</label>
-        <Textarea
-          value={raw}
-          onChange={e => setRaw(e.target.value)}
-          placeholder="Cole a cifra aqui... [Intro] Bm F# A E"
-          className="min-h-[200px] font-mono bg-slate-800/70 border-2 border-slate-600/50 focus:border-amber-400 resize-vertical"
-        />
-        <Button onClick={autoClean} className="mt-2 w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700">
-          ✨ AutoClean → Mapa + Grid
-        </Button>
-      </div>
-
-      {/* Mapa Editável */}
-      <div>
-        <label className="text-sm font-bold text-amber-400 mb-2 block">Mapa de Acordes (Editável)</label>
-        <Textarea
-          value={mapa}
-          onChange={e => onMapaChange(e.target.value)}
-          placeholder="Mapa gerado: : Intro\nBm F# A E"
-          className="min-h-[150px] font-mono bg-slate-800/70 border-2 border-slate-600/50 focus:border-amber-400 resize-vertical"
-        />
-      </div>
-
-      {/* Grid Preview */}
-      <div>
-        <label className="text-sm font-bold text-amber-400 mb-2 block">Real Book Grid Preview</label>
-        <div className="grid grid-cols-4 gap-2 p-6 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
-          {mapa.split('\n')[0]?.split(/\s+/).slice(0,4).map((chord, i) => (
-            <div key={i} className="h-20 border-2 border-white/30 bg-white/20 rounded-lg flex items-center justify-center font-bold text-xl hover:bg-white/40 transition-all">
-              {chord || '—'}
-            </div>
-          )) || Array(4).fill('').map((_, i) => (
-            <div key={i} className="h-20 border-2 border-white/30 bg-white/20 rounded-lg flex items-center justify-center font-bold text-xl">
-              —
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <Button onClick={onGeneratePdf} className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-lg font-bold h-14">
-        🖨️ Exportar PDF Pro (R$9)
-      </Button>
     </div>
   )
 }

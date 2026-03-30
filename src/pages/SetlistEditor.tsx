@@ -1,391 +1,267 @@
-// src/pages/SetlistEditor.tsx
-import React from "react";
-import { useParams } from "react-router-dom";
-import { Music, Plus, ChevronLeft, Trash2, Pencil, X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { 
+  Music, Plus, ChevronLeft, Trash2, FileText, 
+  X, ChevronRight, List, GripVertical, Download 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "react-router-dom";
-import CifrasEditor from "@/components/CifrasEditor.tsx";
 
-// ───────────────────────────────────────
-// TIPOS
-// ───────────────────────────────────────
-
-type MapaSecao = {
-  id: string;
-  nome: string;
-  inicio: number;
-  fim: number;
-};
-
-type Musica = {
-  id: string;
-  titulo: string;
-  artista: string;
-  tom: string;
-  cifra: string;
-  mapa: MapaSecao[];
-  transpose: number;
-};
-
-type SetlistData = {
-  id: string;
-  nome: string;
-  musicas: Musica[];
-};
-
-const TOMS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
-
-// ───────────────────────────────────────
-// MOCK (substitua por useQuery + API real)
-// ───────────────────────────────────────
-
-const mockSetlist: SetlistData = {
-  id: "1",
-  nome: "Rock Night – Bar do Zé",
-  musicas: [
-    {
-      id: "1",
-      titulo: "Yesterday",
-      artista: "The Beatles",
-      tom: "C",
-      cifra: "C\nG\nAm\nF\nC G Am F",
-      mapa: [
-        { id: "1", nome: "Intro", inicio: 0, fim: 4 },
-        { id: "2", nome: "Refrão", inicio: 5, fim: 8 },
-      ],
-      transpose: 0,
-    },
-  ],
-};
-
-// ───────────────────────────────────────
-// MODAL — NOVA MÚSICA
-// ───────────────────────────────────────
-
-type ModalNovaProps = {
-  onConfirm: (musica: Omit<Musica, "id" | "cifra" | "mapa" | "transpose">) => void;
-  onClose: () => void;
-};
-
-function ModalNovaMusica({ onConfirm, onClose }: ModalNovaProps) {
-  const [titulo, setTitulo] = React.useState("");
-  const [artista, setArtista] = React.useState("");
-  const [tom, setTom] = React.useState("C");
-
-  const handleSubmit = () => {
-    if (!titulo.trim()) return;
-    onConfirm({ titulo: titulo.trim(), artista: artista.trim(), tom });
-  };
-
-  return (
-    <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Card do modal */}
-      <motion.div
-        className="relative bg-glass rounded-2xl p-6 w-full max-w-md shadow-2xl"
-        initial={{ scale: 0.95, y: 16, opacity: 0 }}
-        animate={{ scale: 1, y: 0, opacity: 1 }}
-        exit={{ scale: 0.95, y: 16, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Music className="w-4 h-4 text-primary" />
-            <h2 className="font-semibold text-base">Nova Música</h2>
-          </div>
-          <Button variant="ghost" size="icon" className="w-7 h-7" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {/* Campos */}
-        <div className="space-y-4">
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1.5">
-              Nome da música <span className="text-primary">*</span>
-            </label>
-            <input
-              autoFocus
-              type="text"
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-              placeholder="ex: Garota de Ipanema"
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/50"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1.5">
-              Artista
-            </label>
-            <input
-              type="text"
-              value={artista}
-              onChange={(e) => setArtista(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-              placeholder="ex: Tom Jobim"
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/50"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1.5">
-              Tom original
-            </label>
-            <select
-              value={tom}
-              onChange={(e) => setTom(e.target.value)}
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
-            >
-              {TOMS.map((k) => (
-                <option key={k} value={k}>{k}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Ações */}
-        <div className="flex gap-2 mt-6">
-          <Button variant="ghost" className="flex-1" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button
-            variant="neon"
-            className="flex-1"
-            onClick={handleSubmit}
-            disabled={!titulo.trim()}
-          >
-            <Plus className="w-4 h-4" /> Adicionar
-          </Button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-// ───────────────────────────────────────
-// COMPONENTE PRINCIPAL
-// ───────────────────────────────────────
+// --- MOCK DATA INICIAL ---
+const initialMusicas = [
+  { id: "1", titulo: "Yesterday", artista: "The Beatles", tom: "C", cifra: ":INTRO\nC G Am F\n\n:VERSO\nC Bm E7 Am G" },
+  { id: "2", titulo: "Blackbird", artista: "The Beatles", tom: "G", cifra: ":INTRO\nG Am G/B C" }
+];
 
 export default function SetlistEditor() {
-  const { id } = useParams();
+  const [musicas, setMusicas] = useState(initialMusicas);
+  const [selectedId, setSelectedId] = useState<string | null>("1");
+  const [activeTab, setActiveTab] = useState<'mapa' | 'grid'>('mapa');
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showMode, setShowMode] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0); 
+  const [novaMusica, setNovaMusica] = useState({ titulo: "", artista: "", tom: "C" });
 
-  const [musicas, setMusicas] = React.useState<Musica[]>(mockSetlist.musicas);
-  const [editandoId, setEditandoId] = React.useState<string | null>(null);
-  const [modalAberto, setModalAberto] = React.useState(false);
+  const selectedMusica = musicas.find(m => m.id === selectedId);
 
-  // ── Handlers ──
-
-  const handleAdicionarMusica = (
-    dados: Omit<Musica, "id" | "cifra" | "mapa" | "transpose">
-  ) => {
-    const nova: Musica = {
-      id: `new-${Date.now()}`,
-      titulo: dados.titulo,
-      artista: dados.artista,
-      tom: dados.tom,
-      cifra: "",
-      mapa: [],
-      transpose: 0,
+  // --- SUPORTE A TECLADO ---
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!showMode) return;
+      if (e.key === "ArrowRight") setCurrentPage(p => Math.min(p + 1, musicas.length));
+      if (e.key === "ArrowLeft") setCurrentPage(p => Math.max(p - 1, 0));
+      if (e.key === "Escape") setShowMode(false);
     };
-    setMusicas((prev) => [...prev, nova]);
-    setEditandoId(nova.id);
-    setModalAberto(false);
-    // API: await api.post(`/setlists/${id}/musicas`, nova)
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showMode, musicas.length]);
+
+  // --- FUNÇÃO PDF ---
+  const handleExportPDF = async () => {
+    const element = document.getElementById("pdf-content");
+    if (!element) return;
+
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      const opt = {
+        margin: 0,
+        filename: `GigFlow_Repertorio.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true, width: 794 },
+        jsPDF: { unit: 'in' as const, format: 'a4' as const, orientation: 'portrait' as const },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'], before: '.page-break-before', avoid: '.avoid-break' }
+      };
+      await html2pdf().set(opt).from(element).save();
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+    }
   };
 
-  const handleDeletarMusica = (musicaId: string) => {
-    if (!confirm("Tem certeza que quer deletar essa música?")) return;
-    setMusicas((prev) => prev.filter((m) => m.id !== musicaId));
-    if (editandoId === musicaId) setEditandoId(null);
-    // API: await api.delete(`/setlists/${id}/musicas/${musicaId}`)
+  const handleAdicionarMusica = () => {
+    if (!novaMusica.titulo) return;
+    const nova = { id: Date.now().toString(), titulo: novaMusica.titulo, artista: novaMusica.artista, tom: novaMusica.tom, cifra: ":INTRO\n\n:VERSO" };
+    setMusicas([nova, ...musicas]);
+    setSelectedId(nova.id);
+    setIsModalOpen(false);
+    setNovaMusica({ titulo: "", artista: "", tom: "C" });
   };
 
-  const updateMusica = (id: string, patch: Partial<Musica>) =>
-    setMusicas((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, ...patch } : m))
-    );
+  const handleExcluirMusica = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm("Deseja remover esta música do repertório?")) {
+      const novaLista = musicas.filter(m => m.id !== id);
+      setMusicas(novaLista);
+      if (selectedId === id) setSelectedId(novaLista[0]?.id || null);
+    }
+  };
 
-  // ── Render ──
+  const parseTextoParaGridData = (texto: string = "") => {
+    const linhas = texto.split('\n').map(l => l.trim()).filter(l => l !== "");
+    const gridData: { name: string, rows: string[][] }[] = [];
+    let secaoAtual: { name: string, rows: string[][] } | null = null;
+    linhas.forEach(linha => {
+      if (linha.startsWith(':')) {
+        secaoAtual = { name: linha.replace(':', '').trim(), rows: [] };
+        gridData.push(secaoAtual);
+      } else if (secaoAtual) {
+        const acordes = linha.split(/[\s|]+/).filter(a => a.trim() !== "").map(a => a.replace(/_/g, ' '));
+        if (acordes.length > 0) secaoAtual.rows.push(acordes);
+      }
+    });
+    return gridData.length > 0 ? gridData : [{ name: 'MAPA', rows: [] }];
+  };
+
+  const updateMusica = (id: string, patch: any) => {
+    setMusicas((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+  };
 
   return (
-    <>
-      <div className="min-h-screen bg-background">
-
-        {/* Nav */}
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-lg border-b border-border/50">
-          <div className="container max-w-6xl flex items-center justify-between h-14 px-4">
-            <Link to="/" className="flex items-center gap-2">
-              <Music className="w-5 h-5 text-primary" />
-              <span className="font-bold">SetlistPro</span>
-            </Link>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
-                Free · 7/10 músicas
-              </span>
-              <Button variant="neon" size="sm">Upgrade Pro</Button>
-            </div>
-          </div>
-        </nav>
-
-        <main className="pt-20 pb-12 px-4">
-          <div className="container max-w-6xl">
-
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-              <div>
-                <Link to="/dashboard">
-                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground -ml-2 mb-1">
-                    <ChevronLeft className="w-4 h-4" /> Meus Repertórios
-                  </Button>
-                </Link>
-                <h1 className="text-2xl md:text-3xl font-bold">{mockSetlist.nome}</h1>
-                <p className="text-muted-foreground text-sm mt-1">
-                  {musicas.length} música{musicas.length !== 1 ? "s" : ""} no setlist
-                </p>
-              </div>
-              <Button variant="neon" onClick={() => setModalAberto(true)}>
-                <Plus className="w-4 h-4" /> Adicionar Música
-              </Button>
-            </div>
-
-            {/* Lista de músicas */}
-            <div className="space-y-3">
-              <AnimatePresence>
-                {musicas.map((musica, i) => (
-                  <motion.div
-                    key={musica.id}
-                    className="bg-glass rounded-xl overflow-hidden"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.98 }}
-                    transition={{ delay: i * 0.05 }}
-                  >
-                    {/* Cabeçalho */}
-                    <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold group-hover:text-primary transition-colors truncate">
-                          {musica.titulo}
-                        </h3>
-                        <div className="flex flex-wrap gap-3 mt-1.5 text-xs text-muted-foreground">
-                          {musica.artista && <span>{musica.artista}</span>}
-                          {musica.artista && <span>·</span>}
-                          <span>Tom: {musica.tom}</span>
-                          {musica.transpose !== 0 && (
-                            <>
-                              <span>·</span>
-                              <span>Transpose: {musica.transpose > 0 ? `+${musica.transpose}` : musica.transpose}</span>
-                            </>
-                          )}
-                          {musica.mapa.length > 0 && (
-                            <>
-                              <span>·</span>
-                              <span>{musica.mapa.length} seção{musica.mapa.length !== 1 ? "ões" : ""}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="neon-outline"
-                          size="sm"
-                          onClick={() =>
-                            setEditandoId(editandoId === musica.id ? null : musica.id)
-                          }
-                        >
-                          <Pencil className="w-3 h-3" />
-                          {editandoId === musica.id ? "Fechar" : "Editar"}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="w-8 h-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleDeletarMusica(musica.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Editor inline */}
-                    <AnimatePresence>
-                      {editandoId === musica.id && (
-                        <motion.div
-                          className="border-t border-border/50 p-5"
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <CifrasEditor
-                            title={musica.titulo}
-                            artist={musica.artista}
-                            tom={musica.tom}
-                            cifra={musica.cifra}
-                            mapa={typeof musica.mapa === 'string' ? musica.mapa : JSON.stringify(musica.mapa)}
-                            transpose={musica.transpose}
-                            onTitleChange={(v) => updateMusica(musica.id, { titulo: v })}
-                            onArtistChange={(v) => updateMusica(musica.id, { artista: v })}
-                            onTomChange={(v) => updateMusica(musica.id, { tom: v })}
-                            onCifraChange={(v) => updateMusica(musica.id, { cifra: v })}
-                            onMapaChange={(mapa) => updateMusica(musica.id, { mapa })}
-                            onTranspose={(delta) =>
-                              updateMusica(musica.id, { transpose: musica.transpose + delta })
-                            }
-                            onGeneratePdf={() => alert("Exportar PDF (Stripe aqui)")}
-                          />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-
-            {/* Estado vazio */}
-            {musicas.length === 0 && (
-              <motion.div
-                className="bg-glass rounded-xl p-10 text-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                <Music className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground text-sm">
-                  Nenhuma música no setlist ainda.
-                </p>
-                <Button variant="neon" className="mt-4" onClick={() => setModalAberto(true)}>
-                  <Plus className="w-4 h-4" /> Adicionar primeira música
-                </Button>
-              </motion.div>
-            )}
-
-          </div>
-        </main>
-      </div>
-
-      {/* Modal */}
+    <div className="min-h-screen bg-background text-foreground font-sans overflow-x-hidden">
       <AnimatePresence>
-        {modalAberto && (
-          <ModalNovaMusica
-            onConfirm={handleAdicionarMusica}
-            onClose={() => setModalAberto(false)}
-          />
+        {showMode && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-slate-100 flex flex-col overflow-hidden">
+            <div className="flex justify-between items-center p-4 bg-white/70 border-b border-slate-200 backdrop-blur-md">
+              <span className="font-black text-slate-400 tracking-tighter uppercase italic">GigFlow Pro</span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="text-slate-600 border-slate-300 gap-2" onClick={handleExportPDF}><Download className="w-4 h-4" /> Exportar PDF</Button>
+                <Button variant="ghost" className="text-slate-900" onClick={() => { setShowMode(false); setCurrentPage(0); }}><X className="w-6 h-6" /></Button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
+              <div id="pdf-content" className="w-full max-w-3xl">
+                {/* 1. CAPA */}
+                {(currentPage === 0) && (
+                  <div className="bg-white p-12 min-h-[1050px] w-[794px] page-break-before avoid-break shadow-2xl rounded-sm mb-8 text-black" style={{ fontFamily: "'Patrick Hand', cursive" }}>
+                    <div className="border-b-4 border-double border-slate-900 pb-4 mb-8">
+                      <h1 className="text-6xl font-bold uppercase tracking-tighter">Rock Night</h1>
+                      <p className="text-xl opacity-60 italic text-left">Setlist Oficial</p>
+                    </div>
+                    <div className="space-y-4 text-left">
+                      {musicas.map((m, idx) => (
+                        <div key={m.id} className="flex items-end gap-4 text-2xl border-b border-slate-100 pb-1 italic">
+                          <span className="text-slate-300 text-lg w-8 font-sans">{idx + 1}.</span>
+                          <span className="flex-1 font-bold">{m.titulo}</span>
+                          <span className="text-slate-400 text-lg font-sans">{m.tom}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. MÚSICAS */}
+                {musicas.map((m, mIdx) => (
+                  <div key={m.id} className={`${currentPage !== 0 && currentPage !== mIdx + 1 ? 'hidden' : 'block'} bg-white p-12 min-h-[1050px] w-[794px] shadow-2xl rounded-sm mb-8 page-break-before text-black text-left`} style={{ fontFamily: "'Patrick Hand', cursive" }}>
+                    <div className="flex justify-between items-end border-b-2 border-slate-300 mb-8 pb-2">
+                      <div><h2 className="text-5xl font-bold">{m.titulo}</h2><p className="text-xl opacity-60 italic">{m.artista}</p></div>
+                      <div className="text-right"><span className="text-xs font-bold uppercase font-sans">Tom</span><span className="text-4xl font-bold">{m.tom}</span></div>
+                    </div>
+                    {parseTextoParaGridData(m.cifra).map((sec, idx) => (
+                      <div key={idx} className="mb-8 avoid-break">
+                        {sec.name && <div className="inline-block border border-slate-500 text-xs px-3 py-1 mb-2 rounded-xl font-bold text-slate-600 bg-slate-100 uppercase font-sans">{sec.name}</div>}
+                        {sec.rows.map((row, ridx) => (
+                          <div key={ridx} className="flex mb-1">
+                            {row.map((chord, colIdx) => (
+                              <div key={colIdx} className="flex-1 min-h-[80px] border-l-2 border-slate-400 flex items-center justify-center p-2 relative">
+                                <span className="font-bold text-3xl text-slate-800">{chord}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div> {/* FECHAMENTO DO PDF-CONTENT */}
+            </div> {/* FECHAMENTO DO CONTEÚDO CENTRAL */}
+
+            <div className="p-6 bg-white border-t border-slate-200 flex justify-between items-center">
+              <Button variant="ghost" className="text-slate-900" disabled={currentPage === 0} onClick={() => setCurrentPage(p => p - 1)}><ChevronLeft className="w-8 h-8" /></Button>
+              <div className="flex gap-4 items-center">
+                <Button variant="ghost" onClick={() => setCurrentPage(0)} className="text-slate-400 font-bold uppercase tracking-tighter text-xs">Setlist</Button>
+                <span className="text-slate-900 font-bold font-sans">{currentPage === 0 ? "CAPA" : `${currentPage}/${musicas.length}`}</span>
+              </div>
+              <Button variant="neon" size="lg" disabled={currentPage === musicas.length} onClick={() => setCurrentPage(p => p + 1)}>{currentPage === 0 ? "INICIAR" : <ChevronRight className="w-8 h-8" />}</Button>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
-    </>
+
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
+        <div className="container max-w-7xl flex items-center justify-between h-14 px-6 mx-auto">
+          <Link to="/" className="flex items-center gap-2 no-underline text-foreground"><Music className="w-5 h-5 text-primary" /><span className="font-black uppercase tracking-tighter italic text-lg">GigFlow Pro</span></Link>
+          <Button variant="neon" size="sm">Upgrade Pro</Button>
+        </div>
+      </nav>
+
+      <main className="pt-24 pb-12 px-6">
+        <div className="container max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10 text-left font-sans">
+            <div><h1 className="text-4xl font-black uppercase tracking-tighter">Rock Night</h1><p className="text-muted-foreground text-sm">Gerenciamento de Performance</p></div>
+            <div className="flex gap-3">
+              <Button variant="neon" onClick={() => setIsModalOpen(true)}> <Plus className="w-4 h-4 mr-2" /> Adicionar Música </Button>
+              <Button variant="outline" className="gap-2" onClick={() => setShowMode(true)}> <FileText className="w-4 h-4" /> Visualizar Show </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start text-left">
+            <div className="lg:col-span-4 space-y-3">
+              <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Lista ↓</h3>
+              <div className="space-y-2">
+                <AnimatePresence>
+                  {musicas.map((m, index) => (
+                    <motion.div key={m.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={`group p-4 rounded-xl cursor-pointer border flex items-center gap-3 ${selectedId === m.id ? 'bg-secondary border-primary/50' : 'bg-glass/10 border-border/40 hover:border-primary/20'}`} onClick={() => setSelectedId(m.id)}>
+                      <GripVertical className="w-4 h-4 text-muted-foreground/20 group-hover:text-primary transition-colors" />
+                      <div className="flex-1 min-w-0"><span className={`font-bold block truncate ${selectedId === m.id ? 'text-primary' : ''}`}>{m.titulo}</span><span className="text-[10px] text-muted-foreground uppercase">{m.artista} • {m.tom}</span></div>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={(e) => handleExcluirMusica(m.id, e)}><Trash2 className="w-4 h-4" /></Button>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            <div className="lg:col-span-8">
+              {selectedMusica ? (
+                <div className="bg-glass/30 rounded-2xl border border-border/40 overflow-hidden shadow-2xl">
+                  <div className="flex bg-black/40 border-b border-border/20 p-1">
+                    <button onClick={() => setActiveTab('mapa')} className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all ${activeTab === 'mapa' ? 'bg-background text-primary border-t-2 border-primary' : 'text-muted-foreground'}`}>01. Mapa</button>
+                    <button onClick={() => setActiveTab('grid')} className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all ${activeTab === 'grid' ? 'bg-background text-primary border-t-2 border-primary' : 'text-muted-foreground'}`}>02. Grid</button>
+                  </div>
+                  <div className="p-6 bg-background/20 min-h-[500px]">
+                    {activeTab === 'mapa' ? (
+                      <textarea value={selectedMusica.cifra} onChange={(e) => updateMusica(selectedMusica.id, { cifra: e.target.value })} className="w-full h-[400px] bg-transparent border-none text-foreground font-mono text-base focus:ring-0 resize-none p-4" />
+                    ) : (
+                      <div className="p-4 bg-slate-900/20 rounded-xl overflow-auto"><div className="max-w-2xl mx-auto p-12 bg-white rounded shadow-xl text-black text-left" style={{ fontFamily: "'Patrick Hand', cursive" }}>
+                        <div className="flex justify-between items-end border-b-2 border-slate-200 mb-8 pb-2 text-left">
+                          <div><h2 className="text-4xl font-bold leading-none">{selectedMusica.titulo}</h2><p className="text-lg opacity-70">{selectedMusica.artista}</p></div>
+                          <div className="text-right"><span className="text-[10px] font-bold uppercase block font-sans">Tom</span><span className="text-3xl font-bold">{selectedMusica.tom}</span></div>
+                        </div>
+                        {parseTextoParaGridData(selectedMusica.cifra).map((sec, idx) => (
+                          <div key={idx} className="mb-8 text-left">
+                            {sec.name && <div className="inline-block border border-slate-500 text-xs px-3 py-1 mb-2 rounded-xl font-bold text-slate-600 bg-slate-100 uppercase font-sans">{sec.name}</div>}
+                            {sec.rows.map((row, ridx) => (
+                              <div key={ridx} className="flex mb-1">{row.map((chord, colIdx) => (
+                                <div key={colIdx} className="flex-1 min-h-[70px] border-l-2 border-slate-400 flex items-center justify-center p-2"><span className="font-bold text-2xl text-slate-800">{chord}</span></div>
+                              ))}</div>
+                            ))}
+                          </div>
+                        ))}
+                      </div></div>
+                    )}
+                  </div>
+                  <div className="p-4 bg-black/20 border-t border-border/10 flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-widest">
+                    <div className="flex gap-2"><Button variant="ghost" size="sm" className="h-8" onClick={() => setSelectedId(null)}>FECHAR</Button><Button variant="neon" size="sm" className="h-8" onClick={() => alert('Salvo!')}>SALVAR</Button></div>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-[500px] flex items-center justify-center border-2 border-dashed border-border/20 rounded-2xl text-muted-foreground uppercase text-[10px]">Selecione uma música</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-glass border border-white/10 p-8 rounded-3xl w-full max-w-md shadow-2xl text-left">
+              <h2 className="text-2xl font-black mb-6 uppercase tracking-tighter text-primary">Nova Música</h2>
+              <div className="space-y-4">
+                <input type="text" value={novaMusica.titulo} onChange={(e) => setNovaMusica({...novaMusica, titulo: e.target.value})} className="w-full bg-background border border-white/10 rounded-xl p-3 outline-none text-white" placeholder="Título" />
+                <input type="text" value={novaMusica.artista} onChange={(e) => setNovaMusica({...novaMusica, artista: e.target.value})} className="w-full bg-background border border-white/10 rounded-xl p-3 outline-none text-white" placeholder="Artista" />
+                <select value={novaMusica.tom} onChange={(e) => setNovaMusica({...novaMusica, tom: e.target.value})} className="w-full bg-background border border-white/10 rounded-xl p-3 outline-none text-white">
+                  {["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"].map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div className="flex gap-3 mt-8">
+                <Button variant="ghost" className="flex-1" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+                <Button variant="neon" className="flex-1" onClick={handleAdicionarMusica}>Adicionar</Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
