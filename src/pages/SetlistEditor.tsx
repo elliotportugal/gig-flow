@@ -7,23 +7,45 @@ import {
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
-// --- MOCK DATA INICIAL ---
+// --- MOCK DATA INICIAL (Caso o LocalStorage esteja vazio) ---
 const initialMusicas = [
   { id: "1", titulo: "Yesterday", artista: "The Beatles", tom: "C", cifra: ":INTRO\nC G Am F\n\n:VERSO\nC Bm E7 Am G" },
   { id: "2", titulo: "Blackbird", artista: "The Beatles", tom: "G", cifra: ":INTRO\nG Am G/B C" }
 ];
 
 export default function SetlistEditor() {
-  const [musicas, setMusicas] = useState(initialMusicas);
-  const [selectedId, setSelectedId] = useState<string | null>("1");
+  // --- PERSISTÊNCIA: CARREGAR DADOS ---
+  const [musicas, setMusicas] = useState(() => {
+    if (typeof window !== "undefined") {
+      const salvo = localStorage.getItem("gigflow_musicas");
+      if (salvo) {
+        try {
+          return JSON.parse(salvo);
+        } catch (e) {
+          console.error("Erro ao carregar LocalStorage:", e);
+          return initialMusicas;
+        }
+      }
+    }
+    return initialMusicas;
+  });
+
+  const [selectedId, setSelectedId] = useState<string | null>(() => {
+    return musicas.length > 0 ? musicas[0].id : null;
+  });
+
   const [activeTab, setActiveTab] = useState<'mapa' | 'grid'>('mapa');
-  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showMode, setShowMode] = useState(false);
   const [currentPage, setCurrentPage] = useState(0); 
   const [novaMusica, setNovaMusica] = useState({ titulo: "", artista: "", tom: "C" });
 
   const selectedMusica = musicas.find(m => m.id === selectedId);
+
+  // --- PERSISTÊNCIA: SALVAR DADOS AUTOMATICAMENTE ---
+  useEffect(() => {
+    localStorage.setItem("gigflow_musicas", JSON.stringify(musicas));
+  }, [musicas]);
 
   // --- SUPORTE A TECLADO ---
   useEffect(() => {
@@ -37,20 +59,26 @@ export default function SetlistEditor() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [showMode, musicas.length]);
 
-  // --- FUNÇÃO PDF ---
+  // --- FUNÇÃO EXPORTAR PDF (WYSIWYG A4) ---
   const handleExportPDF = async () => {
     const element = document.getElementById("pdf-content");
     if (!element) return;
 
     try {
+      // @ts-ignore
       const html2pdf = (await import("html2pdf.js")).default;
+      
       const opt = {
         margin: 0,
         filename: `GigFlow_Repertorio.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, letterRendering: true, width: 794 },
         jsPDF: { unit: 'in' as const, format: 'a4' as const, orientation: 'portrait' as const },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'], before: '.page-break-before', avoid: '.avoid-break' }
+        pagebreak: { 
+          mode: ['avoid-all', 'css', 'legacy'],
+          before: '.page-break-before',
+          avoid: '.avoid-break'
+        }
       };
       await html2pdf().set(opt).from(element).save();
     } catch (error) {
@@ -58,9 +86,16 @@ export default function SetlistEditor() {
     }
   };
 
+  // --- HANDLERS DE EDIÇÃO ---
   const handleAdicionarMusica = () => {
     if (!novaMusica.titulo) return;
-    const nova = { id: Date.now().toString(), titulo: novaMusica.titulo, artista: novaMusica.artista, tom: novaMusica.tom, cifra: ":INTRO\n\n:VERSO" };
+    const nova = { 
+      id: Date.now().toString(), 
+      titulo: novaMusica.titulo, 
+      artista: novaMusica.artista, 
+      tom: novaMusica.tom, 
+      cifra: ":INTRO\n\n:VERSO" 
+    };
     setMusicas([nova, ...musicas]);
     setSelectedId(nova.id);
     setIsModalOpen(false);
@@ -76,10 +111,29 @@ export default function SetlistEditor() {
     }
   };
 
+  const updateMusica = (id: string, patch: any) => {
+    setMusicas((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+  };
+
+  // --- DRAG & DROP NATIVO ---
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    e.dataTransfer.setData("index", index.toString());
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    const sourceIndex = parseInt(e.dataTransfer.getData("index"));
+    const novaLista = [...musicas];
+    const [removido] = novaLista.splice(sourceIndex, 1);
+    novaLista.splice(targetIndex, 0, removido);
+    setMusicas(novaLista);
+  };
+
+  // --- PARSER DE CIFRAS ---
   const parseTextoParaGridData = (texto: string = "") => {
     const linhas = texto.split('\n').map(l => l.trim()).filter(l => l !== "");
     const gridData: { name: string, rows: string[][] }[] = [];
     let secaoAtual: { name: string, rows: string[][] } | null = null;
+
     linhas.forEach(linha => {
       if (linha.startsWith(':')) {
         secaoAtual = { name: linha.replace(':', '').trim(), rows: [] };
@@ -92,54 +146,66 @@ export default function SetlistEditor() {
     return gridData.length > 0 ? gridData : [{ name: 'MAPA', rows: [] }];
   };
 
-  const updateMusica = (id: string, patch: any) => {
-    setMusicas((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
-  };
-
   return (
     <div className="min-h-screen bg-background text-foreground font-sans overflow-x-hidden">
+      
+      {/* --- MODO PERFORMANCE (SHOW MODE) --- */}
       <AnimatePresence>
         {showMode && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-slate-100 flex flex-col overflow-hidden">
             <div className="flex justify-between items-center p-4 bg-white/70 border-b border-slate-200 backdrop-blur-md">
               <span className="font-black text-slate-400 tracking-tighter uppercase italic">GigFlow Pro</span>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="text-slate-600 border-slate-300 gap-2" onClick={handleExportPDF}><Download className="w-4 h-4" /> Exportar PDF</Button>
-                <Button variant="ghost" className="text-slate-900" onClick={() => { setShowMode(false); setCurrentPage(0); }}><X className="w-6 h-6" /></Button>
+                <Button variant="outline" size="sm" className="text-slate-600 border-slate-300 gap-2" onClick={handleExportPDF}>
+                  <Download className="w-4 h-4" /> Exportar PDF
+                </Button>
+                <Button variant="ghost" className="text-slate-900" onClick={() => { setShowMode(false); setCurrentPage(0); }}>
+                  <X className="w-6 h-6" />
+                </Button>
               </div>
             </div>
 
             <div className="flex-1 overflow-auto p-4 md:p-8 flex flex-col items-center">
               <div id="pdf-content" className="w-full max-w-3xl">
-                {/* 1. CAPA */}
+                {/* CAPA DO REPERTÓRIO */}
                 {(currentPage === 0) && (
-                  <div className="bg-white p-12 min-h-[1050px] w-[794px] page-break-before avoid-break shadow-2xl rounded-sm mb-8 text-black" style={{ fontFamily: "'Patrick Hand', cursive" }}>
-                    <div className="border-b-4 border-double border-slate-900 pb-4 mb-8">
+                  <div className="bg-white p-16 shadow-2xl rounded-sm mb-8 min-h-[1050px] w-[794px] page-break-before avoid-break flex flex-col text-black text-left" style={{ fontFamily: "'Patrick Hand', cursive" }}>
+                    <div className="border-b-4 border-double border-slate-900 pb-4 mb-12">
                       <h1 className="text-6xl font-bold uppercase tracking-tighter">Rock Night</h1>
-                      <p className="text-xl opacity-60 italic text-left">Setlist Oficial</p>
+                      <p className="text-2xl opacity-60 italic">Setlist Oficial</p>
                     </div>
-                    <div className="space-y-4 text-left">
+                    <div className="space-y-6 flex-1">
                       {musicas.map((m, idx) => (
-                        <div key={m.id} className="flex items-end gap-4 text-2xl border-b border-slate-100 pb-1 italic">
-                          <span className="text-slate-300 text-lg w-8 font-sans">{idx + 1}.</span>
+                        <div key={m.id} className="flex items-end gap-4 text-3xl border-b border-slate-100 pb-2 italic">
+                          <span className="text-slate-300 w-10 font-sans italic">{idx + 1}.</span>
                           <span className="flex-1 font-bold">{m.titulo}</span>
-                          <span className="text-slate-400 text-lg font-sans">{m.tom}</span>
+                          <span className="text-slate-400 uppercase text-xl font-sans">{m.tom}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* 2. MÚSICAS */}
+                {/* PÁGINAS DAS MÚSICAS */}
                 {musicas.map((m, mIdx) => (
-                  <div key={m.id} className={`${currentPage !== 0 && currentPage !== mIdx + 1 ? 'hidden' : 'block'} bg-white p-12 min-h-[1050px] w-[794px] shadow-2xl rounded-sm mb-8 page-break-before text-black text-left`} style={{ fontFamily: "'Patrick Hand', cursive" }}>
+                  <div 
+                    key={m.id} 
+                    className={`${currentPage !== 0 && currentPage !== mIdx + 1 ? 'hidden' : 'block'} bg-white p-12 shadow-2xl rounded-sm mb-8 min-h-[1050px] w-[794px] page-break-before text-black text-left`} 
+                    style={{ fontFamily: "'Patrick Hand', cursive" }}
+                  >
                     <div className="flex justify-between items-end border-b-2 border-slate-300 mb-8 pb-2">
-                      <div><h2 className="text-5xl font-bold">{m.titulo}</h2><p className="text-xl opacity-60 italic">{m.artista}</p></div>
-                      <div className="text-right"><span className="text-xs font-bold uppercase font-sans">Tom</span><span className="text-4xl font-bold">{m.tom}</span></div>
+                      <div className="text-left">
+                        <h2 className="text-5xl font-bold leading-none">{m.titulo}</h2>
+                        <p className="text-xl opacity-60 italic">{m.artista}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-bold uppercase font-sans">Tom</span>
+                        <span className="text-4xl font-bold">{m.tom}</span>
+                      </div>
                     </div>
                     {parseTextoParaGridData(m.cifra).map((sec, idx) => (
                       <div key={idx} className="mb-8 avoid-break">
-                        {sec.name && <div className="inline-block border border-slate-500 text-xs px-3 py-1 mb-2 rounded-xl font-bold text-slate-600 bg-slate-100 uppercase font-sans">{sec.name}</div>}
+                        {sec.name && <div className="inline-block border border-slate-500 text-xs px-3 py-0.5 mb-2 rounded font-bold text-slate-600 bg-slate-100 uppercase font-sans">{sec.name}</div>}
                         {sec.rows.map((row, ridx) => (
                           <div key={ridx} className="flex mb-1">
                             {row.map((chord, colIdx) => (
@@ -153,8 +219,8 @@ export default function SetlistEditor() {
                     ))}
                   </div>
                 ))}
-              </div> {/* FECHAMENTO DO PDF-CONTENT */}
-            </div> {/* FECHAMENTO DO CONTEÚDO CENTRAL */}
+              </div>
+            </div>
 
             <div className="p-6 bg-white border-t border-slate-200 flex justify-between items-center">
               <Button variant="ghost" className="text-slate-900" disabled={currentPage === 0} onClick={() => setCurrentPage(p => p - 1)}><ChevronLeft className="w-8 h-8" /></Button>
@@ -162,45 +228,66 @@ export default function SetlistEditor() {
                 <Button variant="ghost" onClick={() => setCurrentPage(0)} className="text-slate-400 font-bold uppercase tracking-tighter text-xs">Setlist</Button>
                 <span className="text-slate-900 font-bold font-sans">{currentPage === 0 ? "CAPA" : `${currentPage}/${musicas.length}`}</span>
               </div>
-              <Button variant="neon" size="lg" disabled={currentPage === musicas.length} onClick={() => setCurrentPage(p => p + 1)}>{currentPage === 0 ? "INICIAR" : <ChevronRight className="w-8 h-8" />}</Button>
+              <Button variant="neon" size="lg" disabled={currentPage === musicas.length} onClick={() => setCurrentPage(p => p + 1)}>
+                {currentPage === 0 ? "INICIAR" : <ChevronRight className="w-8 h-8" />}
+              </Button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* --- INTERFACE DE EDIÇÃO --- */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
-        <div className="container max-w-7xl flex items-center justify-between h-14 px-6 mx-auto">
-          <Link to="/" className="flex items-center gap-2 no-underline text-foreground"><Music className="w-5 h-5 text-primary" /><span className="font-black uppercase tracking-tighter italic text-lg">GigFlow Pro</span></Link>
+        <div className="container max-w-7xl flex items-center justify-between h-14 px-6 mx-auto text-left">
+          <Link to="/" className="flex items-center gap-2 no-underline text-foreground">
+            <Music className="w-5 h-5 text-primary" />
+            <span className="font-black uppercase tracking-tighter italic text-lg">GigFlow Pro</span>
+          </Link>
           <Button variant="neon" size="sm">Upgrade Pro</Button>
         </div>
       </nav>
 
       <main className="pt-24 pb-12 px-6">
         <div className="container max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10 text-left font-sans">
-            <div><h1 className="text-4xl font-black uppercase tracking-tighter">Rock Night</h1><p className="text-muted-foreground text-sm">Gerenciamento de Performance</p></div>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10 text-left">
+            <div>
+              <h1 className="text-4xl font-black uppercase tracking-tighter">Rock Night</h1>
+              <p className="text-muted-foreground text-sm">Gerenciamento de Performance</p>
+            </div>
             <div className="flex gap-3">
-              <Button variant="neon" onClick={() => setIsModalOpen(true)}> <Plus className="w-4 h-4 mr-2" /> Adicionar Música </Button>
+              <Button variant="neon" onClick={() => setIsModalOpen(true)}> <Plus className="w-4 h-4 mr-2" /> Adicionar </Button>
               <Button variant="outline" className="gap-2" onClick={() => setShowMode(true)}> <FileText className="w-4 h-4" /> Visualizar Show </Button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start text-left">
+            {/* LISTA ESQUERDA */}
             <div className="lg:col-span-4 space-y-3">
-              <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Lista ↓</h3>
+              <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4 font-sans">Músicas ↓</h3>
               <div className="space-y-2">
                 <AnimatePresence>
                   {musicas.map((m, index) => (
-                    <motion.div key={m.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={`group p-4 rounded-xl cursor-pointer border flex items-center gap-3 ${selectedId === m.id ? 'bg-secondary border-primary/50' : 'bg-glass/10 border-border/40 hover:border-primary/20'}`} onClick={() => setSelectedId(m.id)}>
+                    <motion.div
+                      key={m.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      draggable onDragStart={(e) => handleDragStart(e, index)} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, index)}
+                      className={`group p-4 rounded-xl cursor-grab active:cursor-grabbing border flex items-center gap-3 ${selectedId === m.id ? 'bg-secondary border-primary/50' : 'bg-glass/10 border-border/40 hover:border-primary/20'}`}
+                      onClick={() => setSelectedId(m.id)}
+                    >
                       <GripVertical className="w-4 h-4 text-muted-foreground/20 group-hover:text-primary transition-colors" />
-                      <div className="flex-1 min-w-0"><span className={`font-bold block truncate ${selectedId === m.id ? 'text-primary' : ''}`}>{m.titulo}</span><span className="text-[10px] text-muted-foreground uppercase">{m.artista} • {m.tom}</span></div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={(e) => handleExcluirMusica(m.id, e)}><Trash2 className="w-4 h-4" /></Button>
+                      <div className="flex-1 min-w-0">
+                        <span className={`font-bold block truncate ${selectedId === m.id ? 'text-primary' : ''}`}>{m.titulo}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase font-sans">{m.artista} • {m.tom}</span>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={(e) => handleExcluirMusica(m.id, e)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </motion.div>
                   ))}
                 </AnimatePresence>
               </div>
             </div>
 
+            {/* EDITOR DIREITA */}
             <div className="lg:col-span-8">
               {selectedMusica ? (
                 <div className="bg-glass/30 rounded-2xl border border-border/40 overflow-hidden shadow-2xl">
@@ -208,53 +295,67 @@ export default function SetlistEditor() {
                     <button onClick={() => setActiveTab('mapa')} className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all ${activeTab === 'mapa' ? 'bg-background text-primary border-t-2 border-primary' : 'text-muted-foreground'}`}>01. Mapa</button>
                     <button onClick={() => setActiveTab('grid')} className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all ${activeTab === 'grid' ? 'bg-background text-primary border-t-2 border-primary' : 'text-muted-foreground'}`}>02. Grid</button>
                   </div>
+
                   <div className="p-6 bg-background/20 min-h-[500px]">
                     {activeTab === 'mapa' ? (
-                      <textarea value={selectedMusica.cifra} onChange={(e) => updateMusica(selectedMusica.id, { cifra: e.target.value })} className="w-full h-[400px] bg-transparent border-none text-foreground font-mono text-base focus:ring-0 resize-none p-4" />
+                      <textarea 
+                        value={selectedMusica.cifra} 
+                        onChange={(e) => updateMusica(selectedMusica.id, { cifra: e.target.value })} 
+                        className="w-full h-[400px] bg-transparent border-none text-foreground font-mono text-base focus:ring-0 resize-none p-4" 
+                      />
                     ) : (
-                      <div className="p-4 bg-slate-900/20 rounded-xl overflow-auto"><div className="max-w-2xl mx-auto p-12 bg-white rounded shadow-xl text-black text-left" style={{ fontFamily: "'Patrick Hand', cursive" }}>
-                        <div className="flex justify-between items-end border-b-2 border-slate-200 mb-8 pb-2 text-left">
-                          <div><h2 className="text-4xl font-bold leading-none">{selectedMusica.titulo}</h2><p className="text-lg opacity-70">{selectedMusica.artista}</p></div>
-                          <div className="text-right"><span className="text-[10px] font-bold uppercase block font-sans">Tom</span><span className="text-3xl font-bold">{selectedMusica.tom}</span></div>
-                        </div>
-                        {parseTextoParaGridData(selectedMusica.cifra).map((sec, idx) => (
-                          <div key={idx} className="mb-8 text-left">
-                            {sec.name && <div className="inline-block border border-slate-500 text-xs px-3 py-1 mb-2 rounded-xl font-bold text-slate-600 bg-slate-100 uppercase font-sans">{sec.name}</div>}
-                            {sec.rows.map((row, ridx) => (
-                              <div key={ridx} className="flex mb-1">{row.map((chord, colIdx) => (
-                                <div key={colIdx} className="flex-1 min-h-[70px] border-l-2 border-slate-400 flex items-center justify-center p-2"><span className="font-bold text-2xl text-slate-800">{chord}</span></div>
-                              ))}</div>
+                      <div className="p-4 bg-slate-900/20 rounded-xl overflow-auto">
+                        <div className="max-w-2xl mx-auto p-12 bg-white rounded shadow-xl text-black" style={{ fontFamily: "'Patrick Hand', cursive" }}>
+                           <div className="flex justify-between items-end border-b-2 border-slate-200 mb-8 pb-2 text-left">
+                              <div className="text-left"><h2 className="text-4xl font-bold leading-none">{selectedMusica.titulo}</h2><p className="text-lg opacity-70">{selectedMusica.artista}</p></div>
+                              <div className="text-right"><span className="text-[10px] font-bold uppercase block font-sans">Tom</span><span className="text-3xl font-bold">{selectedMusica.tom}</span></div>
+                           </div>
+                           {parseTextoParaGridData(selectedMusica.cifra).map((sec, idx) => (
+                              <div key={idx} className="mb-8 text-left">
+                                {sec.name && <div className="inline-block border border-slate-500 text-[10px] px-2 py-0.5 mb-2 rounded font-bold text-slate-600 bg-slate-100 uppercase font-sans">{sec.name}</div>}
+                                {sec.rows.map((row, ridx) => (
+                                  <div key={ridx} className="flex mb-1">
+                                    {row.map((chord, cidx) => (
+                                      <div key={cidx} className="flex-1 min-h-[70px] border-l-2 border-slate-400 flex items-center justify-center p-2"><span className="font-bold text-2xl text-slate-800">{chord}</span></div>
+                                    ))}
+                                  </div>
+                                ))}
+                              </div>
                             ))}
-                          </div>
-                        ))}
-                      </div></div>
+                        </div>
+                      </div>
                     )}
                   </div>
+                  
                   <div className="p-4 bg-black/20 border-t border-border/10 flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-widest">
-                    <div className="flex gap-2"><Button variant="ghost" size="sm" className="h-8" onClick={() => setSelectedId(null)}>FECHAR</Button><Button variant="neon" size="sm" className="h-8" onClick={() => alert('Salvo!')}>SALVAR</Button></div>
+                     <div className="flex gap-2 font-sans">
+                        <Button variant="ghost" size="sm" className="h-8" onClick={() => setSelectedId(null)}>FECHAR</Button>
+                        <Button variant="neon" size="sm" className="h-8" onClick={() => alert('Salvo no LocalStorage!')}>SALVAR</Button>
+                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="h-[500px] flex items-center justify-center border-2 border-dashed border-border/20 rounded-2xl text-muted-foreground uppercase text-[10px]">Selecione uma música</div>
+                <div className="h-[500px] flex items-center justify-center border-2 border-dashed border-border/20 rounded-2xl text-muted-foreground uppercase text-[10px] font-sans">Selecione uma música</div>
               )}
             </div>
           </div>
         </div>
       </main>
 
+      {/* MODAL NOVA MÚSICA */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-glass border border-white/10 p-8 rounded-3xl w-full max-w-md shadow-2xl text-left">
               <h2 className="text-2xl font-black mb-6 uppercase tracking-tighter text-primary">Nova Música</h2>
-              <div className="space-y-4">
+              <div className="space-y-4 font-sans">
                 <input type="text" value={novaMusica.titulo} onChange={(e) => setNovaMusica({...novaMusica, titulo: e.target.value})} className="w-full bg-background border border-white/10 rounded-xl p-3 outline-none text-white" placeholder="Título" />
                 <input type="text" value={novaMusica.artista} onChange={(e) => setNovaMusica({...novaMusica, artista: e.target.value})} className="w-full bg-background border border-white/10 rounded-xl p-3 outline-none text-white" placeholder="Artista" />
                 <select value={novaMusica.tom} onChange={(e) => setNovaMusica({...novaMusica, tom: e.target.value})} className="w-full bg-background border border-white/10 rounded-xl p-3 outline-none text-white">
                   {["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"].map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
-              <div className="flex gap-3 mt-8">
+              <div className="flex gap-3 mt-8 font-sans">
                 <Button variant="ghost" className="flex-1" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
                 <Button variant="neon" className="flex-1" onClick={handleAdicionarMusica}>Adicionar</Button>
               </div>
