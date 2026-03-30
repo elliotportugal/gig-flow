@@ -4,7 +4,19 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="GigFlow">
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js');
+        });
+      }
+</script>
     <!-- Gig Flow Pro Branding -->
     <title>Gig Flow Pro - Real Book Digital para Músicos</title>
     <meta name="description" content="Gerencie seu repertório, cifras e setlists profissionais. AutoClean, Grid Real Book, PDF Pro R$9. Para bassistas e músicos do interior SP." />
