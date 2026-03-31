@@ -1,107 +1,204 @@
-import { Music, Plus, Calendar, BarChart3, Clock, ChevronRight, MoreVertical } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { 
+  Music, Plus, Calendar, Clock, 
+  ChevronRight, MoreVertical, LayoutDashboard, Star, ShieldCheck, Loader2, Trash2 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
-const mockSetlists = [
-  { id: 1, name: "Rock Night – Bar do Zé", songs: 12, duration: "1h30", date: "22 Mar 2026", energy: "Alta" },
-  { id: 2, name: "Jazz Brunch – Café Bossa", songs: 8, duration: "1h00", date: "15 Mar 2026", energy: "Média" },
-  { id: 3, name: "Casamento Silva", songs: 18, duration: "2h30", date: "08 Mar 2026", energy: "Variada" },
-];
-
-const stats = [
-  { label: "Shows este mês", value: "6", icon: Calendar },
-  { label: "Músicas no acervo", value: "47", icon: Music },
-  { label: "Horas economizadas", value: "12h", icon: Clock },
-  { label: "Músicas populares", value: "Top 5", icon: BarChart3 },
-];
+interface Setlist {
+  id: string;
+  name: string;
+  date: string;
+  energy: string;
+}
 
 export default function Dashboard() {
+  const [setlists, setSetlists] = useState<Setlist[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalMusicas, setTotalMusicas] = useState<number>(0);
+  const [lastActivity, setLastActivity] = useState<string>("---");
+  const navigate = useNavigate();
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const { data: setlistsData, error: setlistsError } = await supabase
+        .from('setlists')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (setlistsError) throw setlistsError;
+      if (setlistsData) {
+        setSetlists(setlistsData);
+        if (setlistsData.length > 0) setLastActivity(setlistsData[0].name);
+      }
+
+      const { count, error: countError } = await supabase
+        .from('musicas')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) throw countError;
+      if (count !== null) setTotalMusicas(count);
+    } catch (error: any) {
+      toast.error("Erro na sincronização: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const handleNovoRepertorio = async () => {
+    const name = window.prompt("Nome do novo repertório:");
+    if (!name) return;
+    try {
+      const { data, error } = await supabase
+        .from('setlists')
+        .insert([{ name, date: new Date().toLocaleDateString('pt-BR'), energy: 'Média' }])
+        .select().single();
+      if (error) throw error;
+      toast.success("Repertório criado!");
+      navigate(`/editor/${data.id}`);
+    } catch (error: any) {
+      toast.error("Erro ao criar repertório.");
+    }
+  };
+
+  const handleExcluirRepertorio = async (id: string, name: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    toast(`Excluir "${name}"?`, {
+      description: "Esta ação é irreversível no banco de dados.",
+      action: {
+        label: "Confirmar",
+        onClick: async () => {
+          try {
+            await supabase.from('setlists').delete().eq('id', id);
+            setSetlists(prev => prev.filter(s => s.id !== id));
+            toast.success("Removido.");
+            fetchDashboardData();
+          } catch (e) { toast.error("Erro ao excluir."); }
+        },
+      },
+    });
+  };
+
+  const stats = [
+    { label: "Total de Mapas", value: totalMusicas.toString(), sub: "Cifras salvas", icon: Music, color: "text-primary" },
+    { label: "Última Atividade", value: lastActivity, sub: "Show recente", icon: Clock, color: "text-blue-400" },
+    { label: "Integridade Cloud", value: "100%", sub: "Sincronizado", icon: ShieldCheck, color: "text-emerald-400" },
+    { label: "Plano GigFlow", value: "Admin", sub: "Acesso Total", icon: Star, color: "text-amber-400" },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Sidebar-like top nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-lg border-b border-border/50">
-        <div className="container max-w-6xl flex items-center justify-between h-14 px-4">
-          <Link to="/" className="flex items-center gap-2">
+    <div className="min-h-screen bg-background text-foreground font-sans">
+      
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
+        <div className="container max-w-6xl flex items-center justify-between h-14 px-6 mx-auto">
+          <Link to="/" className="flex items-center gap-2 no-underline text-foreground">
             <Music className="w-5 h-5 text-primary" />
-            <span className="font-bold">SetlistPro</span>
+            <span className="font-bold tracking-tight text-lg italic">GigFlow Pro</span>
           </Link>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">Free · 7/10 músicas</span>
-            <Button variant="neon" size="sm">Upgrade Pro</Button>
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-2 text-[10px] font-semibold text-primary uppercase tracking-widest bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+              <ShieldCheck className="w-3 h-3" /> Admin
+            </div>
+            <Button variant="outline" size="sm" className="text-[10px] font-bold uppercase tracking-widest">Sair</Button>
           </div>
         </div>
       </nav>
 
-      <main className="pt-20 pb-12 px-4">
-        <div className="container max-w-6xl">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <main className="pt-24 pb-12 px-6">
+        <div className="container max-w-6xl mx-auto">
+          
+          {/* --- HEADER AJUSTADO --- */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12 text-left">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold">Meus Repertórios</h1>
-              <p className="text-muted-foreground text-sm mt-1">Organize seus shows como um profissional</p>
+              <div className="flex items-center gap-2 mb-2 text-primary/70">
+                <LayoutDashboard className="w-4 h-4" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em]">Console de Gestão</span>
+              </div>
+              {/* Fonte mais limpa: removido o Black, Uppercase e Tighter */}
+              <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-foreground">
+                Meus repertórios
+              </h1>
+              <p className="text-muted-foreground text-sm mt-1 font-medium">
+                Seu acervo musical sincronizado na nuvem.
+              </p>
             </div>
-            <Link to="/editor">
-              <Button variant="neon">
-                <Plus className="w-4 h-4" /> Novo Repertório
-              </Button>
-            </Link>
+            <Button onClick={handleNovoRepertorio} variant="neon" className="px-6 font-bold uppercase tracking-widest text-[10px] h-11">
+              <Plus className="w-4 h-4 mr-2" /> Novo Repertório
+            </Button>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+          {/* --- STATS CARDS --- */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-14">
             {stats.map((s, i) => (
-              <motion.div
-                key={s.label}
-                className="bg-glass rounded-xl p-4"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
+              <motion.div 
+                key={s.label} 
+                className="bg-glass/10 border border-border/30 rounded-2xl p-5 hover:border-primary/40 transition-all text-left"
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <s.icon className="w-4 h-4 text-primary" />
-                  <span className="text-xs text-muted-foreground">{s.label}</span>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`p-2 rounded-lg bg-secondary/50 ${s.color}`}>
+                    <s.icon className="w-4 h-4" />
+                  </div>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{s.label}</span>
                 </div>
-                <p className="text-2xl font-bold">{s.value}</p>
+                <p className="text-xl font-bold tracking-tight truncate">{s.value}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{s.sub}</p>
               </motion.div>
             ))}
           </div>
 
-          {/* Setlists */}
-          <div className="space-y-3">
-            {mockSetlists.map((sl, i) => (
-              <motion.div
-                key={sl.id}
-                className="bg-glass rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary/30 transition-colors cursor-pointer group"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + i * 0.08 }}
+          {/* --- LISTA DE REPERTÓRIOS --- */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4 px-2 text-left">
+              <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">Shows Disponíveis</h3>
+              {loading && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
+            </div>
+            
+            {!loading && setlists.length === 0 && (
+              <div className="py-16 text-center border border-dashed border-border/40 rounded-3xl">
+                <p className="text-muted-foreground text-xs font-medium">Nenhum repertório encontrado.</p>
+              </div>
+            )}
+
+            {setlists.map((sl, i) => (
+              <motion.div 
+                key={sl.id} 
+                className="bg-glass/5 border border-border/20 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6 hover:bg-secondary/20 hover:border-primary/20 transition-all cursor-pointer group"
+                onClick={() => navigate(`/editor/${sl.id}`)}
               >
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold group-hover:text-primary transition-colors truncate">{sl.name}</h3>
-                  <div className="flex flex-wrap gap-3 mt-1.5 text-xs text-muted-foreground">
-                    <span>{sl.songs} músicas</span>
-                    <span>·</span>
-                    <span>{sl.duration}</span>
-                    <span>·</span>
-                    <span>Energia: {sl.energy}</span>
-                    <span>·</span>
-                    <span>{sl.date}</span>
+                <div className="flex-1 min-w-0 text-left">
+                  <h3 className="text-lg font-medium group-hover:text-primary transition-colors truncate tracking-tight">{sl.name}</h3>
+                  <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2 text-[10px] font-medium text-muted-foreground">
+                    <div className="flex items-center gap-1.5"><Calendar className="w-3 h-3" /> {sl.date}</div>
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-secondary/50 text-primary/80 italic font-semibold">Vibe: {sl.energy}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Link to="/editor">
-                    <Button variant="neon-outline" size="sm">
-                      Editar <ChevronRight className="w-3 h-3" />
-                    </Button>
-                  </Link>
-                  <Button variant="ghost" size="icon" className="w-8 h-8">
-                    <MoreVertical className="w-4 h-4" />
+                <div className="flex items-center gap-3">
+                  <Button variant="ghost" size="sm" className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground group-hover:text-primary">
+                    Abrir <ChevronRight className="w-3 h-3 ml-1" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="w-9 h-9 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    onClick={(e) => handleExcluirRepertorio(sl.id, sl.name, e)}
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </motion.div>
             ))}
           </div>
+
         </div>
       </main>
     </div>
