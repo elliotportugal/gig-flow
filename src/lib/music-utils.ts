@@ -5,32 +5,62 @@ export interface GridSection {
   rows: string[][];
 }
 
-/**
- * Transforma o texto da cifra em uma estrutura de Grid
- * Ex: ":INTRO\nC G Am F" vira [{ name: 'INTRO', rows: [['C', 'G', 'Am', 'F']] }]
- */
-export const parseTextoParaGridData = (texto: string = ""): GridSection[] => {
-  const linhas = texto.split('\n').map(l => l.trim()).filter(l => l !== "");
-  const gridData: GridSection[] = [];
-  let secaoAtual: GridSection | null = null;
+export function parseTextoParaGridData(texto: string): GridSection[] {
+  const linhas = texto.split('\n');
+  const sections: GridSection[] = [];
+  let currentSection: GridSection | null = null;
 
   linhas.forEach(linha => {
-    // Detecta seção (ex: :INTRO)
-    if (linha.startsWith(':')) {
-      secaoAtual = { name: linha.replace(':', '').trim(), rows: [] };
-      gridData.push(secaoAtual);
-    } 
-    // Se não for seção, trata como linha de acordes
-    else if (secaoAtual) {
-      const acordes = linha.split(/[\s|]+/)
-        .filter(a => a.trim() !== "")
-        .map(a => a.replace(/_/g, ' ')); // Remove o underline visualmente
+    let raw = linha.trim();
+    if (!raw) return;
+
+    // 1. IDENTIFICAR SEÇÃO (:VERSO)
+    if (raw.startsWith(':')) {
+      currentSection = { name: raw.replace(':', '').trim(), rows: [] };
+      sections.push(currentSection);
+      return;
+    }
+
+    if (!currentSection) {
+      currentSection = { name: '', rows: [] };
+      sections.push(currentSection);
+    }
+
+    // 2. TRATAR REPETIÇÃO (Dm)x8 -> SEM DESENROLAR
+    const repeatRegex = /\((.*?)\)x(\d+)/g;
+    raw = raw.replace(repeatRegex, (_, content, count) => {
+      // Divide por espaços ou barras para analisar o conteúdo interno
+      const parts = content.trim().split(/[| ]+/).filter(p => p.trim() !== '');
       
-      if (acordes.length > 0) {
-        secaoAtual.rows.push(acordes);
+      if (parts.length === 1) {
+        // Caso (Dm)x8 -> Retorna o marcador único que o ChordCell entende
+        return `||:${parts[0]}:||x${count}`;
+      }
+      
+      // Caso (Dm G)x2 -> Marca as extremidades
+      parts[0] = `||:${parts[0]}`;
+      parts[parts.length - 1] = `${parts[parts.length - 1]}:||x${count}`;
+      // Retornamos com barras para garantir que o split posterior funcione
+      return parts.join(' | ');
+    });
+
+    // 3. SEPARAR COMPASSOS (Lógica Inteligente)
+    // Se a linha contém '|', separamos por ela. Se não contém, separamos por ESPAÇOS.
+    let compassos: string[];
+    if (raw.includes('|')) {
+      compassos = raw.split('|').map(c => c.trim()).filter(c => c !== '');
+    } else {
+      compassos = raw.split(/\s+/).map(c => c.trim()).filter(c => c !== '');
+    }
+    
+    // 4. AGRUPAR EM LINHAS DE 4 (Formatação de Grade)
+    if (compassos.length > 0) {
+      // Usamos um loop para garantir que blocos de 4 compassos virem linhas
+      for (let i = 0; i < compassos.length; i += 4) {
+        currentSection.rows.push(compassos.slice(i, i + 4));
       }
     }
   });
 
-  return gridData.length > 0 ? gridData : [{ name: 'MAPA', rows: [] }];
-};
+  return sections;
+}

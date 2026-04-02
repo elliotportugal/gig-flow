@@ -1,4 +1,7 @@
-import { Music, Zap, Users, FileText, Clock, Smartphone, ChevronRight, Star, Check, Play } from "lucide-react";
+import { 
+  Zap, Users, FileText, Clock, Smartphone, 
+  ChevronRight, Star, Check, Play, LogIn, Code, Download 
+} from "lucide-react"; // <-- Adicionado Download aqui
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -8,73 +11,127 @@ const fadeUp = {
   visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6 } }),
 };
 
+// --- LOGO EXCLUSIVO (v4.0 - G + Clave de Sol) ---
+function GigFlowLogo({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="logo-grad-lp" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#2563EB" /> 
+          <stop offset="100%" stopColor="#22D3EE" /> 
+        </linearGradient>
+      </defs>
+      <path 
+        d="M75 35C70 25 58 18 45 20C30 22 20 35 20 50C20 65 30 78 45 80C58 82 70 75 75 65M75 45V65M55 50H75M45 25C45 25 55 10 55 25C55 40 35 45 35 60C35 75 45 85 55 75" 
+        stroke="url(#logo-grad-lp)" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round"
+      />
+      <circle cx="55" cy="75" r="4" fill="#22D3EE" />
+    </svg>
+  );
+}
+
+function Navbar() {
+  return (
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-lg border-b border-border/30 h-16">
+      <div className="container max-w-6xl flex items-center justify-between h-full px-4 mx-auto">
+        <Link to="/" className="flex items-center gap-2.5 group no-underline">
+          <GigFlowLogo className="w-6 h-6 group-hover:scale-110 transition-transform" />
+          <span className="font-bold text-xl text-foreground tracking-tight">GigFlow Pro</span>
+        </Link>
+        <div className="hidden md:flex items-center gap-8">
+          <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-blue-400 no-underline transition-colors">Recursos</a>
+          <a href="#pricing" className="text-sm font-medium text-muted-foreground hover:text-blue-400 no-underline transition-colors">Preços</a>
+          <Link to="/login">
+            <Button className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white border-none gap-2 px-5 text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-500/20">
+              Acessar <LogIn className="w-3.5 h-3.5" />
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
 function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden px-4">
-      {/* Background grid */}
-      <div className="absolute inset-0 bg-[linear-gradient(hsl(210_100%_56%/0.03)_1px,transparent_1px),linear-gradient(90deg,hsl(210_100%_56%/0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
-      {/* Glow orbs */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-neon-blue/5 rounded-full blur-[120px]" />
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-neon-purple/5 rounded-full blur-[100px]" />
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden px-4 pt-16 text-center">
+      {/* Background & Orbs (Mantidos) */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(37,99,235,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(37,99,235,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px]" />
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-[100px]" />
 
-      <div className="container relative z-10 text-center max-w-4xl">
+      <div className="container relative z-10 max-w-4xl mx-auto">
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-glass text-sm text-muted-foreground mb-8">
-            <Zap className="w-3.5 h-3.5 text-neon-blue" />
-            Monte seu repertório em 5 minutos
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/5 text-sm text-blue-400 mb-8 border border-blue-500/20 font-bold uppercase tracking-widest text-[10px]">
+            <GigFlowLogo className="w-3.5 h-3.5" />
+            Sincronização Cloud para Músicos
           </span>
         </motion.div>
 
-        <motion.h1
-          className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95] mb-6"
-          initial="hidden" animate="visible" variants={fadeUp} custom={1}
-        >
-          Seu setlist.
-          <br />
-          <span className="text-gradient-neon">Sua vibe.</span>
+        <motion.h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95] mb-6 text-foreground" initial="hidden" animate="visible" variants={fadeUp} custom={1}>
+          Seu setlist.<br />
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-400">Sua vibe.</span>
         </motion.h1>
 
-        <motion.p
-          className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
-          initial="hidden" animate="visible" variants={fadeUp} custom={2}
-        >
-          Cifras estilo Real Book, transpose inteligente, export PDF e modo palco.
-          Tudo que sua banda precisa pra arrasar no gig.
+        <motion.p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 font-medium" initial="hidden" animate="visible" variants={fadeUp} custom={2}>
+          Repertório digital com mapas inteligentes, transpose em um clique e modo palco de alto contraste.
+          O acervo que sua gig precisa para fluir sem pastas de papel.
         </motion.p>
 
-        <motion.div
-          className="flex flex-col sm:flex-row gap-4 justify-center"
-          initial="hidden" animate="visible" variants={fadeUp} custom={3}
-        >
-          <Link to="/dashboard">
-            <Button variant="neon" size="lg" className="text-base px-8 h-12">
-              Teste Grátis <ChevronRight className="w-4 h-4" />
+        <motion.div className="flex justify-center" initial="hidden" animate="visible" variants={fadeUp} custom={3}>
+          <Link to="/login">
+            <Button className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white border-none shadow-xl shadow-blue-500/20 text-base px-12 h-14 font-bold uppercase tracking-widest text-[11px]">
+              Começar Agora <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           </Link>
-          <Button variant="neon-outline" size="lg" className="text-base px-8 h-12">
-            <Play className="w-4 h-4" /> Ver Demo
-          </Button>
+          {/* Botão "Ver Demo" removido para focar na conversão principal */}
         </motion.div>
 
-        {/* Chord preview card */}
-        <motion.div
-          className="mt-16 mx-auto max-w-lg bg-glass rounded-xl p-6 text-left"
-          initial="hidden" animate="visible" variants={fadeUp} custom={4}
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-3 h-3 rounded-full bg-destructive/80" />
-            <div className="w-3 h-3 rounded-full bg-neon-cyan/60" />
-            <div className="w-3 h-3 rounded-full bg-primary/60" />
-            <span className="ml-2 text-xs text-muted-foreground">garota_de_ipanema.chord</span>
+        {/* --- PREVIEW ATUALIZADA (IGUAL AO SISTEMA) --- */}
+        <motion.div className="mt-20 mx-auto max-w-4xl flex flex-col md:flex-row gap-6 text-left" initial="hidden" animate="visible" variants={fadeUp} custom={4}>
+          
+          {/* Lado A: Sintaxe do Editor */}
+          <div className="flex-1 bg-slate-950/90 rounded-[2rem] p-8 border border-blue-500/20 shadow-2xl">
+            <div className="flex items-center gap-2 mb-6 opacity-40 text-blue-400">
+              <Code className="w-4 h-4" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Editor de Mapa</span>
+            </div>
+            <pre className="font-mono text-sm leading-relaxed text-blue-100/80">
+              <span className="text-blue-500 font-bold">:VERSO</span>{"\n"}
+              {"Fmaj7 | G7 | Gm7 | Gb7"}{"\n\n"}
+              <span className="text-blue-500 font-bold">:CHORUS</span>{"\n"}
+              {"Bbmaj7 | Am7 | Gm7 | C7"}
+            </pre>
           </div>
-          <pre className="chord-text text-sm leading-relaxed">
-            <span className="text-neon-blue">Fmaj7</span>{"        "}<span className="text-neon-cyan">G7</span>{"\n"}
-            {"Olha que coisa mais linda"}{"\n"}
-            <span className="text-neon-blue">Gm7</span>{"         "}<span className="text-neon-purple">Gb7</span>{"\n"}
-            {"Mais cheia de graça"}{"\n"}
-            <span className="text-neon-blue">Fmaj7</span>{"        "}<span className="text-neon-cyan">Gb7</span>{"\n"}
-            {"É ela menina que vem e que passa"}
-          </pre>
+
+          {/* Lado B: Grid Real do Sistema (Fonte Patrick Hand) */}
+          <div className="flex-1 bg-white rounded-[2rem] p-8 border border-blue-500/10 shadow-2xl overflow-hidden min-h-[300px]" style={{ fontFamily: "'Patrick Hand', cursive" }}>
+             <div className="flex justify-between items-end border-b-2 border-slate-200 mb-6 pb-2">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900 leading-tight">Garota de Ipanema</h2>
+                  <p className="text-xs opacity-60 text-slate-600 font-sans font-bold uppercase tracking-widest">Tom: F</p>
+                </div>
+             </div>
+             
+             <div className="mb-6">
+                <div className="inline-block border border-slate-300 text-[9px] px-2 py-0.5 mb-2 rounded font-bold text-slate-500 bg-slate-50 uppercase font-sans tracking-widest">Verso</div>
+                <div className="grid grid-cols-4 border-l-2 border-slate-300">
+                  {['Fmaj7', 'G7', 'Gm7', 'Gb7'].map(c => (
+                    <div key={c} className="h-12 flex items-center justify-center border-b border-r border-slate-100 font-bold text-slate-800 text-xl">{c}</div>
+                  ))}
+                </div>
+             </div>
+
+             <div>
+                <div className="inline-block border border-blue-300 text-[9px] px-2 py-0.5 mb-2 rounded font-bold text-blue-500 bg-blue-50 uppercase font-sans tracking-widest">Chorus</div>
+                <div className="grid grid-cols-4 border-l-2 border-blue-500">
+                  {['Bbmaj7', 'Am7', 'Gm7', 'C7'].map(c => (
+                    <div key={c} className="h-12 flex items-center justify-center border-b border-r border-blue-50 shadow-[inset_0_-1px_0_rgba(37,99,235,0.1)] font-bold text-blue-600 text-xl">{c}</div>
+                  ))}
+                </div>
+             </div>
+          </div>
+
         </motion.div>
       </div>
     </section>
@@ -82,34 +139,30 @@ function HeroSection() {
 }
 
 const features = [
-  { icon: Music, title: "Cifras Real Book", desc: "Cole qualquer cifra e veja formatada como lead sheet profissional." },
-  { icon: Zap, title: "Transpose Inteligente", desc: "Mude o tom em um clique. Cada instrumento na tonalidade certa." },
-  { icon: Users, title: "Colab em Tempo Real", desc: "Toda a banda edita junto. Sincronizado via Supabase Realtime." },
-  { icon: FileText, title: "Export PDF", desc: "Gere PDFs prontos pro gig. Compartilhe via WhatsApp em 1 toque." },
-  { icon: Clock, title: "IA Sugere Ordem", desc: "Algoritmo otimiza energia e duração do show automaticamente." },
-  { icon: Smartphone, title: "Modo Palco", desc: "Fullscreen no celular/iPad com auto-scroll e pedal simulado." },
+  { icon: FileText, title: "Mapas Inteligentes", desc: "Escreva seu mapa em texto e veja o sistema gerar um grid profissional instantaneamente." },
+  { icon: Zap, title: "Transpose em 1 Toque", desc: "Mude o tom de todo o repertório sem precisar reescrever nada. Sincronia total." },
+  { icon: Users, title: "Banda Sincronizada", desc: "Toda a banda acessa o mesmo setlist na nuvem. Alterou no Dashboard, mudou no palco." },
+  { icon: Smartphone, title: "Modo Palco Pro", desc: "Interface de alto contraste otimizada para iPad e tablets. Leitura perfeita no escuro." },
+  { icon: Download, title: "Export PDF Cloud", desc: "Gere PDFs limpos e organizados para compartilhar com freelancers via WhatsApp." },
+  { icon: Clock, title: "Foco na Performance", desc: "Menos tempo virando página, mais tempo focado no groove e na interação com o público." },
 ];
 
 function FeaturesSection() {
   return (
-    <section className="py-24 px-4">
-      <div className="container max-w-6xl">
+    <section className="py-24 px-4 bg-slate-900/50" id="features">
+      <div className="container max-w-6xl mx-auto">
         <motion.div className="text-center mb-16" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
-          <h2 className="text-3xl md:text-5xl font-bold mb-4">Tudo pro seu <span className="text-gradient-neon">show perfeito</span></h2>
-          <p className="text-muted-foreground text-lg">Economize 2h/semana de ensaio. Zero erro no palco.</p>
+          <h2 className="text-3xl md:text-5xl font-bold mb-4">Tudo para o seu <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-cyan-400">show perfeito</span></h2>
+          <p className="text-muted-foreground text-lg font-medium">Desenvolvido por músicos, para quem faz gig de verdade.</p>
         </motion.div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((f, i) => (
-            <motion.div
-              key={f.title}
-              className="bg-glass rounded-xl p-6 hover:border-primary/30 transition-colors group"
-              initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-            >
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                <f.icon className="w-5 h-5 text-primary" />
+            <motion.div key={f.title} className="bg-slate-900/40 border border-blue-500/10 rounded-3xl p-8 hover:border-blue-500/30 transition-all text-left group" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}>
+              <div className="w-12 h-12 rounded-2xl bg-blue-600/10 flex items-center justify-center mb-6 group-hover:bg-blue-600/20 transition-colors">
+                <f.icon className="w-6 h-6 text-blue-400" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">{f.title}</h3>
-              <p className="text-muted-foreground text-sm">{f.desc}</p>
+              <h3 className="text-xl font-bold mb-3 tracking-tight">{f.title}</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">{f.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -117,104 +170,55 @@ function FeaturesSection() {
     </section>
   );
 }
-
-const testimonials = [
-  { name: "Lucas Fender", role: "Guitarrista – Velhos Tempos", text: "Parei de imprimir 20 folhas por show. Agora é só abrir o iPad e tocar.", stars: 5 },
-  { name: "Marina Blues", role: "Vocalista – Trem do Samba", text: "O transpose salvou nosso gig quando o sax pediu pra mudar tom em cima da hora.", stars: 5 },
-  { name: "DJ Rodrigo Bass", role: "Baixista Freelancer", text: "Modo palco com auto-scroll é game changer. Mãos livres pra tocar.", stars: 5 },
-];
-
-function TestimonialsSection() {
-  return (
-    <section className="py-24 px-4 relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent" />
-      <div className="container max-w-5xl relative z-10">
-        <motion.h2 className="text-3xl md:text-5xl font-bold text-center mb-16" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
-          Músicos que <span className="text-gradient-purple">já curtem</span>
-        </motion.h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map((t, i) => (
-            <motion.div
-              key={t.name}
-              className="bg-glass rounded-xl p-6"
-              initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-            >
-              <div className="flex gap-1 mb-4">
-                {Array.from({ length: t.stars }).map((_, j) => (
-                  <Star key={j} className="w-4 h-4 fill-neon-blue text-neon-blue" />
-                ))}
-              </div>
-              <p className="text-sm text-foreground/80 mb-4">"{t.text}"</p>
-              <div>
-                <p className="font-semibold text-sm">{t.name}</p>
-                <p className="text-xs text-muted-foreground">{t.role}</p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-const plans = [
-  {
-    name: "Free",
-    price: "R$0",
-    period: "/sempre",
-    desc: "Pra testar e jams casuais",
-    features: ["10 músicas", "1 setlist", "Cifras Real Book", "Modo palco básico"],
-    cta: "Começar Grátis",
-    highlight: false,
-  },
-  {
-    name: "Pro",
-    price: "R$19",
-    period: "/mês",
-    desc: "Pra bandas que fazem shows",
-    features: ["Músicas ilimitadas", "Setlists ilimitados", "Export PDF", "Colab em tempo real", "IA sugere ordem", "Modo palco avançado", "Compartilhar WhatsApp"],
-    cta: "Assinar Pro",
-    highlight: true,
-  },
-];
 
 function PricingSection() {
+  const plans = [
+    {
+      name: "Free Reps",
+      price: "R$0",
+      period: "/sempre",
+      desc: "Perfeito para músicos freelancers e trabalhos casuais.",
+      features: ["10 músicas no acervo", "1 setlist ativo", "Mapas Digitais", "Modo palco básico"],
+      cta: "Começar Grátis",
+      highlight: false,
+    },
+    {
+      name: "Pro Gigs",
+      price: "R$19",
+      period: "/mês",
+      desc: "Para projetos profissionais, guiados pelo mesmo mapa.",
+      features: ["Músicas ilimitadas", "Setlists ilimitados", "Export PDF Cloud", "Transpose inteligente", "Acesso Offline", "Suporte prioritário"],
+      cta: "Assinar Pro",
+      highlight: true,
+    },
+  ];
+
   return (
     <section className="py-24 px-4" id="pricing">
-      <div className="container max-w-4xl">
+      <div className="container max-w-4xl mx-auto">
         <motion.div className="text-center mb-16" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
-          <h2 className="text-3xl md:text-5xl font-bold mb-4">Planos <span className="text-gradient-neon">simples</span></h2>
-          <p className="text-muted-foreground text-lg">Sem pegadinha. Cancele quando quiser.</p>
+          <h2 className="text-3xl md:text-5xl font-bold mb-4">Plano <span className="text-blue-400">simples</span></h2>
+          <p className="text-muted-foreground text-lg font-medium italic">Sem pegadinha, cancele quando quiser.</p>
         </motion.div>
         <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-          {plans.map((plan, i) => (
-            <motion.div
-              key={plan.name}
-              className={`rounded-xl p-8 ${plan.highlight ? "bg-glass glow-blue border-primary/30" : "bg-glass"}`}
-              initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-            >
-              {plan.highlight && (
-                <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4">
-                  Popular
-                </span>
-              )}
-              <h3 className="text-2xl font-bold">{plan.name}</h3>
-              <div className="mt-2 mb-1">
-                <span className="text-4xl font-bold">{plan.price}</span>
-                <span className="text-muted-foreground">{plan.period}</span>
+          {plans.map((p, i) => (
+            <motion.div key={p.name} className={`rounded-[2.5rem] p-10 text-left border ${p.highlight ? "bg-slate-900 border-blue-500/40 shadow-2xl" : "bg-slate-950 border-white/5"}`}>
+              {p.highlight && <span className="inline-block px-3 py-1 rounded-full bg-blue-600/20 text-blue-400 text-[10px] font-bold mb-6 tracking-widest uppercase">Popular</span>}
+              <h3 className="text-2xl font-bold">{p.name}</h3>
+              <div className="mt-2 mb-8 flex items-baseline gap-1">
+                <span className="text-5xl font-bold">{p.price}</span>
+                <span className="text-muted-foreground text-sm">{p.period}</span>
               </div>
-              <p className="text-muted-foreground text-sm mb-6">{plan.desc}</p>
-              <ul className="space-y-3 mb-8">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                    {f}
-                  </li>
+              <ul className="space-y-4 mb-10">
+                {p.features.map(f => (
+                  <li key={f} className="flex items-center gap-3 text-sm font-medium"><Check className="w-4 h-4 text-blue-500" />{f}</li>
                 ))}
               </ul>
-              <Button variant={plan.highlight ? "neon" : "neon-outline"} className="w-full">
-                {plan.cta}
-              </Button>
+              <Link to="/login">
+                <Button className={`w-full h-12 rounded-2xl font-bold text-[10px] uppercase tracking-widest ${p.highlight ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white" : "bg-white/5 text-white hover:bg-white/10"}`}>
+                  {p.cta}
+                </Button>
+              </Link>
             </motion.div>
           ))}
         </div>
@@ -225,47 +229,26 @@ function PricingSection() {
 
 function Footer() {
   return (
-    <footer className="border-t border-border/50 py-12 px-4">
-      <div className="container max-w-6xl flex flex-col md:flex-row justify-between items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Music className="w-5 h-5 text-primary" />
-          <span className="font-bold text-lg">SetlistPro</span>
+    <footer className="border-t border-white/5 py-12 px-4 bg-black/20">
+      <div className="container max-w-6xl flex flex-col md:flex-row justify-between items-center gap-6 mx-auto">
+        <div className="flex items-center gap-3">
+          <GigFlowLogo className="w-7 h-7" />
+          <span className="font-bold text-xl tracking-tight">GigFlow Pro</span>
         </div>
-        <p className="text-sm text-muted-foreground">© 2026 SetlistPro. Feito com 🎸 para músicos.</p>
+        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold text-center">
+          © 2026 GigFlow Pro • Feito para músicos do Brasil
+        </p>
       </div>
     </footer>
   );
 }
 
-function Navbar() {
-  return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
-      <div className="container max-w-6xl flex items-center justify-between h-16 px-4">
-        <Link to="/" className="flex items-center gap-2">
-          <Music className="w-5 h-5 text-primary" />
-          <span className="font-bold text-lg">SetlistPro</span>
-        </Link>
-        <div className="hidden md:flex items-center gap-8">
-          <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Preços</a>
-          <Link to="/dashboard">
-            <Button variant="neon" size="sm">Entrar</Button>
-          </Link>
-        </div>
-        <Link to="/dashboard" className="md:hidden">
-          <Button variant="neon" size="sm">Entrar</Button>
-        </Link>
-      </div>
-    </nav>
-  );
-}
-
 export default function LandingPage() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background text-foreground font-sans antialiased overflow-x-hidden">
       <Navbar />
       <HeroSection />
       <FeaturesSection />
-      <TestimonialsSection />
       <PricingSection />
       <Footer />
     </div>
